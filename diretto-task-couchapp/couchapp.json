@@ -1,0 +1,4 @@
+{
+    "name": "diretto-task-couchapp",
+    "description": "CouchApp for CouchDB-based persistence layer of diretto Task API service"
+}
