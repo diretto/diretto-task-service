@@ -1,0 +1,12 @@
+{
+  "name"          : "diretto-task-node",
+  "description"   : "A node.js/CouchDB based diretto Task API service implementation",
+  "url"           : "http://www.diretto.org",
+  "keywords"      : ["diretto"],
+  "author"        : "Benjamin Erb",
+  "contributors"  : [],
+  "dependencies"  : [],
+  "lib"           : ".",
+  "main"          : "./task-node.js",
+  "version"       : "0.1.0"
+}
