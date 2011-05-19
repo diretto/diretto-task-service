@@ -11,16 +11,10 @@ require.paths.push(path.join(__dirname, 'lib', 'diretto'));
 
 
 var direttoUtil = require('diretto-util');
-var TaskNode = require('diretto-task-node'); //TODO:
-
+var TaskNode = require('diretto-task-node'); 
 
 var config = {};
 config['task'] = direttoUtil.readConfigFileSync(path.join(__dirname, 'conf', 'task.json'));
 
-//TODO:
-//
-//var taskNode = new TaskNode(config);
-//
-//console.dir(taskNode);
-//
-////taskNode.bind(config.apiNode.bind.port || 8001, config.apiNode.bind.ip || "127.0.0.1");
+var taskNode = new TaskNode(config);
+taskNode.bind();
