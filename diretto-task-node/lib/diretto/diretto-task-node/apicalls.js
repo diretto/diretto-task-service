@@ -1,6 +1,14 @@
 module.exports = function(taskNode) {
 
 	return {
+
+		"notImplemented" : function(req, res, next) {
+			console.log(req.uriParams);
+			console.dir(req._url);
+			console.dir(req.params);
+			res.send(501);
+		},
+
 		"getIndex" : function(req, res, next) {
 			res.send(200, {
 				"api" : {
