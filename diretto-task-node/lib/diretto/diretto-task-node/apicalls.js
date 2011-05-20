@@ -1,8 +1,11 @@
 var validate = {
-		task : require('./validations/task.js')
+		task : require('./validations/task.js'),
+		basetag : require('./validations/basetag.js'),
+		comment : require('./validations/comment.js'),
+		submission : require('./validations/submission.js')
 };
 
-//validate.newTask = require('./validations/newtask.js');
+// validate.newTask = require('./validations/newtask.js');
 
 module.exports = function(taskNode) {
 
@@ -55,15 +58,10 @@ module.exports = function(taskNode) {
 
 		task : {
 			create : function(req, res, next) {
-				validate.task(req.params, function(data, err){
-					if(err){
-						res.send(400, err);
-					}
-					else{
-						console.log(JSON.stringify(data));
-						res.send(201, null, {'Location': "bla"});
-						next();
-					}
+				validate.task(req.params, res, next, function(data){
+					console.log(JSON.stringify(data));
+					res.send(201, null, {'Location': "bla"});
+					next();
 				});
 				
 			},
@@ -78,9 +76,34 @@ module.exports = function(taskNode) {
 			}
 		
 		},
-		submission : {},
-		comment : {},
-		tag : {},
+		submission : {
+			create : function(req, res, next) {
+				validate.submission(req.params, res, next, function(data){
+					console.log(JSON.stringify(data));
+					res.send(201, null, {'Location': "bla"});
+					next();
+				});
+			}
+		},
+		comment : {			
+			create : function(req, res, next) {
+				validate.comment(req.params, res, next, function(data){
+					console.log(JSON.stringify(data));
+					res.send(201, null, {'Location': "bla"});
+					next();
+				});
+			}
+		},
+		tag : {
+			create : function(req, res, next) {
+				validate.basetag(req.params, res, next, function(data){
+					console.log(JSON.stringify(data));
+					res.send(201, null, {'Location': "bla"});
+					next();
+				});
+				
+			},
+		},
 		query : {},
 
 		

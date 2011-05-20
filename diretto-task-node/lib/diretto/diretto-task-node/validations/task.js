@@ -1,17 +1,20 @@
 var TITLE_MIN_LENGTH = 6;
-var TITLE_MAX_LENGTH = 2566;
-var DESCRIPTION_MIN_LENGTH= 0;
-var DESCRIPTION_MAX_LENGTH= 4096;
+var TITLE_MAX_LENGTH = 250;
+var DESCRIPTION_MIN_LENGTH = 0;
+var DESCRIPTION_MAX_LENGTH = 4000;
 
-module.exports = function(data, callback) {
+module.exports = function(data, response, next, callback) {
 	var failed = false;
 	var fail = function(msg) {
-		callback(null, {
+		response.send(400, {
 			error : {
-				reason : "Invalid task entity. "+(msg || "Please check your entity structure.")
+				reason : "Invalid task entity. " + (msg || "Please check your entity structure.")
 			}
 		});
+
 		failed = true;
+		next();
+		return;
 	};
 
 	// Check main attributes
@@ -41,38 +44,38 @@ module.exports = function(data, callback) {
 		}
 
 		// Check location
-		if(!(typeof(data.constraints.location.bbox) == 'object' && data.constraints.location.bbox.length && data.constraints.location.bbox.length === 4)){
+		if (!(typeof (data.constraints.location.bbox) == 'object' && data.constraints.location.bbox.length && data.constraints.location.bbox.length === 4)) {
 			fail("Invalid location values.");
 			return;
 		}
-		else{
+		else {
 			// TODO: check coordinates
 		}
 	}
-	
+
 	// Check text
-	if(!(typeof(data.description) == 'string' && data.description.length > DESCRIPTION_MIN_LENGTH && data.description.length <= DESCRIPTION_MAX_LENGTH)){
+	if (!(typeof (data.description) == 'string' && data.description.length >= DESCRIPTION_MIN_LENGTH && data.description.length <= DESCRIPTION_MAX_LENGTH)) {
 		fail("Invalid description.");
 		return;
 	}
-	if(!(typeof(data.title) == 'string' && data.title.length > TITLE_MIN_LENGTH && data.title.length <= TITLE_MAX_LENGTH)){
+	if (!(typeof (data.title) == 'string' && data.title.length >= TITLE_MIN_LENGTH && data.title.length <= TITLE_MAX_LENGTH)) {
 		fail("Invalid title.");
 		return;
 	}
 
 	if (!failed) {
 		callback({
-			   "constraints":{
-				      "time":{
-				         "start":data.constraints.time.start,
-				         "end":data.constraints.time.end
-				      },
-				      "location":{
-				         "bbox": data.constraints.location.bbox
-				      }
-				   },
-				   "title":data.title,
-				   "description":data.description
-				}, null);
+			"constraints" : {
+				"time" : {
+					"start" : data.constraints.time.start,
+					"end" : data.constraints.time.end
+				},
+				"location" : {
+					"bbox" : data.constraints.location.bbox
+				}
+			},
+			"title" : data.title,
+			"description" : data.description
+		});
 	}
 };

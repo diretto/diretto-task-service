@@ -115,7 +115,7 @@ TaskNode.prototype._registerRoutes = function() {
 	s.post('/v2/tasks/snapshots', [], api.task.fetchSnapshots, []);
 
 	//Submission
-	s.post('/v2/task/:taskId/submissions', [authenticate], api.error.notImplemented, []);
+	s.post('/v2/task/:taskId/submissions', [authenticate], api.submission.create, []);
 	s.get('/v2/task/:taskId/submissions', [authenticate], api.error.notImplemented, []);
 	s.get('/v2/task/:taskId/submission/:submissionId', [authenticate], api.error.notImplemented, []);
 	
@@ -125,7 +125,7 @@ TaskNode.prototype._registerRoutes = function() {
 	s.get('/v2/task/:taskId/comment/:commentId', [authenticate], api.error.notImplemented, []);
 	
 	//Tag
-	s.post('/v2/tags', [authenticate], api.error.notImplemented, []);
+	s.post('/v2/tags', [authenticate], api.tag.create, []);
 	s.get('/v2/tag/:tagId', [authenticate], api.error.notImplemented, []);
 
 	s.post('/v2/task/:taskId/submission/:submissionId/tags', [authenticate], api.error.notImplemented, []);
