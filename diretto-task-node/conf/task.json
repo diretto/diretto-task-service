@@ -10,5 +10,11 @@
     	"title":"diretto v2 Task Dev Instance",
     	"website":"http://www.diretto.org",
     	"contact":"mail@diretto.org"
-    }	 
+    },
+	"persistence" : {
+		"couchdb":{
+			"uri":"http://localhost:5984/tasks"
+		}
+	}
+    	 
 }
