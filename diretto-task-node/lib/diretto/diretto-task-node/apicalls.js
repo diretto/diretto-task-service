@@ -7,6 +7,12 @@ var validate = {
 
 // validate.newTask = require('./validations/newtask.js');
 
+var CONSTANTS = require('./constants.js');
+var ENTRY = CONSTANTS.ENTRY;
+
+var uuid = require('node-uuid');
+require("rfc3339date");
+
 module.exports = function(taskNode) {
 
 	var db = taskNode.db;
@@ -59,9 +65,17 @@ module.exports = function(taskNode) {
 		task : {
 			create : function(req, res, next) {
 				validate.task(req.params, res, next, function(data){
-					console.log(JSON.stringify(data));
-					res.send(201, null, {'Location': "bla"});
-					next();
+					data._id = ENTRY.TASK.PREFIX + "-" +uuid();
+					data.creationTime = new Date().toRFC3339UTCString();
+					data.creator = req.authenticatedUser;
+					data.type = ENTRY.TASK.TYPE;
+					db.save(data, function(err, doc){
+						console.dir(err);
+						console.dir(doc);
+						//TODO insert correct URI
+						res.send(201, null, {'Location': "bla"});
+						next();
+					});
 				});
 				
 			},

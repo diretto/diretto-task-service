@@ -15,6 +15,9 @@
 		"couchdb":{
 			"uri":"http://localhost:5984/tasks"
 		}
+	},
+	"public": {
+		"uri" : "http://localhost/"
 	}
     	 
 }

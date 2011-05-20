@@ -63,6 +63,7 @@ TaskNode.prototype._registerRoutes = function() {
 	var that = this;
 	var s = this.server;
 
+	
 	/**
 	 * User authentication
 	 */
