@@ -2,10 +2,13 @@
 
 ## Document Types
 
-### Prefixes
+### Tasks
+Prefix: t
+Type: task
 
-t: Tasks
-q: Queries
+### Queries
+Prefix: q
+Type: query
 
 ## Views
 

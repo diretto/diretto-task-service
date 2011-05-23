@@ -69,6 +69,8 @@ module.exports = function(taskNode) {
 					data.creationTime = new Date().toRFC3339UTCString();
 					data.creator = req.authenticatedUser;
 					data.type = ENTRY.TASK.TYPE;
+					data.visible = true;
+					data.votes = {up:[], down:[]};
 					db.save(data, function(err, doc){
 						console.dir(err);
 						console.dir(doc);
