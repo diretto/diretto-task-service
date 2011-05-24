@@ -1,6 +1,6 @@
 var http = require('http');
 
-module.exports = function(documentId,callback){
+module.exports = function(documentUri,callback){
 	//TODO: check document existence
-	callback(true);
+	callback(true,{});
 };

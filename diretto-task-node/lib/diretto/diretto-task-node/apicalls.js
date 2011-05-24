@@ -1,3 +1,7 @@
+var crypto = require('crypto');
+
+var uuid = require('node-uuid');
+
 var validate = {
 		task : require('./validations/task.js'),
 		basetag : require('./validations/basetag.js'),
@@ -8,26 +12,33 @@ var validate = {
 var assertion = {
 		documentExists : require('./assertions/document-exists.js'),
 		taskExists : require('./assertions/task-exists.js'),
+		tagExists : require('./assertions/tag-exists.js'),
+		submissionExists : require('./assertions/submission-exists.js'),
+};
+
+var helper = {
+		idResource : require('./helper/id-tagged-resource.js'),
 };
 
 var CONSTANTS = require('./constants.js');
 var ENTRY = CONSTANTS.ENTRY;
 
-var uuid = require('node-uuid');
 require("rfc3339date");
 
 module.exports = function(taskNode) {
 
 	var db = taskNode.db;
 	
-//	var taskExists = function(taskId, callback){
-//		if(true){
-//			callback(null,taskId);
-//		}
-//		else{
-//			callback({error:{reason:"not found"}},null);
-//		}
-//	};
+	
+	
+// var taskExists = function(taskId, callback){
+// if(true){
+// callback(null,taskId);
+// }
+// else{
+// callback({error:{reason:"not found"}},null);
+// }
+// };
 
 	return {
 
@@ -75,7 +86,7 @@ module.exports = function(taskNode) {
 					data.visible = true;
 					data.votes = {up:[], down:[]};
 					data.comments = {};
-					data.tags = {};
+					data.tags = { };
 					data.submissions = {};
 					db.save(data, function(err, doc){
 						console.dir(err);
@@ -101,9 +112,68 @@ module.exports = function(taskNode) {
 		submission : {
 			create : function(req, res, next) {
 				validate.submission(req.params, res, next, function(data){
-					console.log(JSON.stringify(data));
-					res.send(201, null, {'Location': "bla"});
-					next();
+					
+					var md5calc = crypto.createHash('md5');
+					md5calc.update(data.document.link.href);						
+					var submissionId = md5calc.digest('hex');						
+					// TODO: extract document ID as submission ID
+					
+					assertion.taskExists(req.uriParams.taskId, db, function(taskExists, task){
+						if(!taskExists){
+							res.send(404, {
+								   "error":{
+									      "reason":"Task not found."
+									   }
+									},{});
+							next();
+							return;
+						}
+						assertion.submissionExists(req.uriParams.taskId,req.uriParams.submissionId, db, function(submissionExists){
+							if(submissionExists){
+								res.send(409, {
+									   "error":{
+										      "reason":"Document has already been submitted."
+										   }
+										},{});
+								next();
+								return;
+							}
+							assertion.documentExists(data.document.link.href, function(documentExists, direttoDoc){
+								if(!documentExists){
+									res.send(404, {
+										   "error":{
+											      "reason":"Document does not exist."
+											   }
+											},{});
+									next();
+									return;
+									
+								}
+								//TODO check task vs direttoDoc
+								var submission = {
+									id : submissionId,
+									creationTime : new Date().toRFC3339UTCString(),
+									creator : req.authenticatedUser,
+									votes : {
+										up : [],
+										down :[]
+									},
+									tags : {},
+									document : data.document								
+								};
+								
+								// TODO: improve call
+								db.request('POST', "/tasks/_design/tasks/_update/addsubmission/t-"+req.uriParams.taskId, submission, function(err,result){
+									console.log(err);
+									console.log(result);
+									console.log(JSON.stringify(data));
+									res.send(201, null, {'Location': "bla"});
+									next();
+									return;							
+								});								
+							});
+						});
+					});
 				});
 			}
 		},
@@ -111,22 +181,21 @@ module.exports = function(taskNode) {
 			create : function(req, res, next) {			
 				validate.comment(req.params, res, next, function(data){
 					assertion.taskExists(req.uriParams, db, function(exists){
-						if(exists){
-							
-						}
-						else{
+						if(!exists){
 							res.send(404, {
 								   "error":{
 									      "reason":"Task not found."
 									   }
 									},{});
 							next();
+							return;
 						}
 						data.id = uuid();
 						data.creationTime = new Date().toRFC3339UTCString();
 						data.creator = req.authenticatedUser;
 						data.votes = {up:[], down:[]};
 						
+						// TODO: improve call
 						db.request('POST', "/tasks/_design/tasks/_update/addcomment/t-"+req.uriParams.taskId, data, function(err,result){
 							console.log(err);
 							console.log(result);
@@ -160,48 +229,21 @@ module.exports = function(taskNode) {
 					return;
 				}
 
-				var p =req.uriParams;
+				var p = req.uriParams;
 
 				var data = {};
 				data.userId = req.uriParams.userId;
 				data.vote = req.uriParams.vote;
 
-				if(p.taskId && p.submissionId && p.tagId){
-					data.resource = {
-							taskId: p.taskId,
-							submissionId: p.submissionId,
-							tagId: p.tagId,
-					} ;
-				}
-				else if(p.taskId && p.submissionId){
-					data.resource = {
-							taskId: p.taskId,
-							submissionId: p.submissionId
-					} ;
-				}
-				else if(p.taskId && p.tagId){
-					data.resource = {
-							taskId: p.taskId,
-							tagId: p.tagId
-					} ;
-				}
-				else if(p.taskId && p.commentId){
-					data.resource = {
-							taskId: p.taskId,
-							commentId: p.commentId
-					} ;
-				}
-				else if(p.taskId){
-					data.resource = {
-							taskId: p.taskId
-					} ;
-				}
-				else{
+				data.resource = helper.idResource(req.uriParams);
+				if(data.resource === null){
 					res.send(400, null, {});
 					next();
 					return;
 				}
+							
 
+				// TODO: improve call
 				db.request('POST', "/tasks/_design/tasks/_update/vote/t-"+req.uriParams.taskId, data, function(err,result){
 					console.log(err);
 					console.log(result);
@@ -212,15 +254,32 @@ module.exports = function(taskNode) {
 				});
 				
 			},
-//			undo : function(req, res, next) {
+			undo : function(req, res, next) {
+				var data = {};
+				data.userId = req.uriParams.userId;
+
+				data.resource = helper.idResource(req.uriParams);
+				if(data.resource === null){
+					res.send(400, null, {});
+					next();
+					return;
+				}
+				
+				db.request('POST', "/tasks/_design/tasks/_update/undovote/t-"+req.uriParams.taskId, data, function(err,result){
+					console.log(err);
+					console.log(result);
+					console.log(JSON.stringify(data));
+					res.send(201, null, {'Location': "bla"});
+					next();
+					return;							
+				});
+			},
+// get : function(req, res, next) {
 //				
-//			},
-//			get : function(req, res, next) {
+// },
+// getAll : function(req, res, next) {
 //				
-//			},
-//			getAll : function(req, res, next) {
-//				
-//			},
+// },
 		},
 
 		

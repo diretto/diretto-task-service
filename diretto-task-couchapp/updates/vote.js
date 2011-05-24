@@ -14,7 +14,6 @@ function(doc, req) {
 		return[null, "hello new"+req.uuid+"\n"];
 	}
 	
-	
 	var body = {};
 	try{		
 		body  = JSON.parse(req.body);
@@ -23,51 +22,7 @@ function(doc, req) {
 		return[null, "1 hello \n"];
 	}
 	
-	var v = null;
-	if(body.resource.taskId && body.resource.submissionId && body.resource.tagId){
-		try{
-			v = doc.submissions[body.resource.submissionId].tags[body.resource.tagId].votes;
-		}
-		catch (e) {
-			v = null;
-		}
-	}
-	else if(body.resource.taskId && body.resource.submissionId){
-		try{
-			v = doc.submissions[body.resource.submissionId].votes;
-		}
-		catch (e) {
-			v = null;
-		}
-	}
-	else if(body.resource.taskId && body.resource.tagId){
-		try{
-			v = doc.tags[body.resource.tagId].votes;
-		}
-		catch (e) {
-			v = null;
-		}
-	}
-	else if(body.resource.taskId && body.resource.commentId){
-		try{
-			v = doc.comments[body.resource.commentId].votes;
-		}
-		catch (e) {
-			v = null;
-		}
-	}
-	else if(body.resource.taskId){
-		try{
-			v = doc.votes;
-		}
-		catch (e) {
-			v = null;
-		}
-	}
-	else{
-		return [null, "error"];
-	}
-	
+	var v = vote.extractId(body, doc);	
 	if(v == null){
 		return [null, "not found"];
 	}
