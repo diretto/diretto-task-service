@@ -4,14 +4,33 @@
  * @author Benjamin Erb
  */
 function(doc, req) {
+	
+	//Check for document
 	if(!doc || doc.type !== "task"){
-		return[null, "hello new"+req.uuid+"\n"];
+		return[null, "not found"];
 	}
-	else{
-		if(!doc.bla){
-			doc.bla = [];
+	
+	//Parse JSON
+	var body = {};
+	if(req.body){
+		try{
+			body  = JSON.parse(req.body);
 		}
-		doc.bla.push(req.uuid);
-		return[doc, {code: 303, body:"hello existing\n"+req.uuid+"\n",headers : { "X-Response-Code" : "303" } }];
+		catch (e) {
+			return[null, "invalid JSON"];
+		}
 	}
+	
+	if(!doc.comments){
+		doc.comments = {};
+	}
+	
+	if(doc.comments[body.id]){
+		return [null, "conflict"];
+	}
+	
+	doc.comments[body.id] = body;
+
+	return[doc, {code: 200, body:"added\n"+req.uuid+"\n",headers : { "X-Response-Code" : "303" } }];
+	
 };
