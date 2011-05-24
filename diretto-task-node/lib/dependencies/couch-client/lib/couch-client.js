@@ -63,12 +63,14 @@ function CouchClient(url) {
     }
 
     var options = {
-      host: uri.hostname,
+//    	      host: uri.hostname+":"+uri.port,
+    	      host: uri.hostname,
       method: method,
       path: path,
       port: uri.port,
       headers: headers
     };
+    console.dir(options);
     var request = uri.protocolHandler.request(options, function (response) {
       response.setEncoding('utf8');
       var body = "";

@@ -5,7 +5,10 @@ var validate = {
 		submission : require('./validations/submission.js')
 };
 
-// validate.newTask = require('./validations/newtask.js');
+var assertion = {
+		documentExists : require('./assertions/document-exists.js'),
+		taskExists : require('./assertions/task-exists.js'),
+};
 
 var CONSTANTS = require('./constants.js');
 var ENTRY = CONSTANTS.ENTRY;
@@ -17,14 +20,14 @@ module.exports = function(taskNode) {
 
 	var db = taskNode.db;
 	
-	var taskExists = function(taskId, callback){
-		if(true){
-			callback(null,taskId);
-		}
-		else{
-			callback({error:{reason:"not found"}},null);
-		}
-	};
+//	var taskExists = function(taskId, callback){
+//		if(true){
+//			callback(null,taskId);
+//		}
+//		else{
+//			callback({error:{reason:"not found"}},null);
+//		}
+//	};
 
 	return {
 
@@ -71,10 +74,13 @@ module.exports = function(taskNode) {
 					data.type = ENTRY.TASK.TYPE;
 					data.visible = true;
 					data.votes = {up:[], down:[]};
+					data.comments = {};
+					data.tags = {};
+					data.submissions = {};
 					db.save(data, function(err, doc){
 						console.dir(err);
 						console.dir(doc);
-						//TODO insert correct URI
+						// TODO insert correct URI
 						res.send(201, null, {'Location': "bla"});
 						next();
 					});
@@ -102,11 +108,34 @@ module.exports = function(taskNode) {
 			}
 		},
 		comment : {			
-			create : function(req, res, next) {
+			create : function(req, res, next) {			
 				validate.comment(req.params, res, next, function(data){
-					console.log(JSON.stringify(data));
-					res.send(201, null, {'Location': "bla"});
-					next();
+					assertion.taskExists(req.uriParams, db, function(exists){
+						if(exists){
+							
+						}
+						else{
+							res.send(404, {
+								   "error":{
+									      "reason":"Task not found."
+									   }
+									},{});
+							next();
+						}
+						data.id = uuid();
+						data.creationTime = new Date().toRFC3339UTCString();
+						data.creator = req.authenticatedUser;
+						data.votes = {up:[], down:[]};
+						
+						db.request('POST', "/tasks/_design/tasks/_update/addcomment/t-"+req.uriParams.taskId, data, function(err,result){
+							console.log(err);
+							console.log(result);
+							console.log(JSON.stringify(data));
+							res.send(201, null, {'Location': "bla"});
+							next();
+							return;							
+						});
+					});
 				});
 			}
 		},
@@ -116,11 +145,83 @@ module.exports = function(taskNode) {
 					console.log(JSON.stringify(data));
 					res.send(201, null, {'Location': "bla"});
 					next();
+					return;
 				});
 				
 			},
 		},
 		query : {},
+		
+		vote : {
+			cast : function(req, res, next) {
+				if(!req.uriParams.vote || !req.uriParams.userId || !(req.uriParams.vote === "up" || req.uriParams.vote === "down")){
+					res.send(400, null, {});
+					next();
+					return;
+				}
+
+				var p =req.uriParams;
+
+				var data = {};
+				data.userId = req.uriParams.userId;
+				data.vote = req.uriParams.vote;
+
+				if(p.taskId && p.submissionId && p.tagId){
+					data.resource = {
+							taskId: p.taskId,
+							submissionId: p.submissionId,
+							tagId: p.tagId,
+					} ;
+				}
+				else if(p.taskId && p.submissionId){
+					data.resource = {
+							taskId: p.taskId,
+							submissionId: p.submissionId
+					} ;
+				}
+				else if(p.taskId && p.tagId){
+					data.resource = {
+							taskId: p.taskId,
+							tagId: p.tagId
+					} ;
+				}
+				else if(p.taskId && p.commentId){
+					data.resource = {
+							taskId: p.taskId,
+							commentId: p.commentId
+					} ;
+				}
+				else if(p.taskId){
+					data.resource = {
+							taskId: p.taskId
+					} ;
+				}
+				else{
+					res.send(400, null, {});
+					next();
+					return;
+				}
+
+				db.request('POST', "/tasks/_design/tasks/_update/vote/t-"+req.uriParams.taskId, data, function(err,result){
+					console.log(err);
+					console.log(result);
+					console.log(JSON.stringify(data));
+					res.send(201, null, {'Location': "bla"});
+					next();
+					return;							
+				});
+				
+			},
+//			undo : function(req, res, next) {
+//				
+//			},
+//			get : function(req, res, next) {
+//				
+//			},
+//			getAll : function(req, res, next) {
+//				
+//			},
+		},
 
 		
 		error : {

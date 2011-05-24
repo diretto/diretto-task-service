@@ -121,7 +121,8 @@ TaskNode.prototype._registerRoutes = function() {
 	s.get('/v2/task/:taskId/submission/:submissionId', [authenticate], api.error.notImplemented, []);
 	
 	//Comment
-	s.post('/v2/task/:taskId/comments', [authenticate], api.error.notImplemented, []);
+//	s.post('/v2/task/:taskId/comments', [authenticate], api.error.notImplemented, []);
+	s.post('/v2/task/:taskId/comments', [authenticate], api.comment.create, []);
 	s.get('/v2/task/:taskId/comments', [authenticate], api.error.notImplemented, []);
 	s.get('/v2/task/:taskId/comment/:commentId', [authenticate], api.error.notImplemented, []);
 	
@@ -141,27 +142,27 @@ TaskNode.prototype._registerRoutes = function() {
 	s.get('/v2/task/:taskId/comment/:commentId/votes', [authenticate], api.error.notImplemented, []);
 	s.get('/v2/task/:taskId/comment/:commentId/vote/user/:userId', [authenticate, authorize], api.error.notImplemented, []);
 	s.del('/v2/task/:taskId/comment/:commentId/vote/user/:userId', [authenticate, authorize], api.error.notImplemented, []);
-	s.put('/v2/task/:taskId/comment/:commentId/vote/user/:userId/:vote', [authenticate, authorize], api.error.notImplemented, []);
+	s.put('/v2/task/:taskId/comment/:commentId/vote/user/:userId/:vote', [authenticate, authorize], api.vote.cast, []);
 
 	s.get('/v2/task/:taskId/votes', [authenticate], api.error.notImplemented, []);
 	s.get('/v2/task/:taskId/vote/user/:userId', [authenticate, authorize], api.error.notImplemented, []);
 	s.del('/v2/task/:taskId/vote/user/:userId', [authenticate, authorize], api.error.notImplemented, []);
-	s.put('/v2/task/:taskId/vote/user/:userId/:vote', [authenticate, authorize], api.error.notImplemented, []);
+	s.put('/v2/task/:taskId/vote/user/:userId/:vote', [authenticate, authorize], api.vote.cast, []);
 	
 	s.get('/v2/task/:taskId/tag/:tagId/votes', [authenticate], api.error.notImplemented, []);
 	s.get('/v2/task/:taskId/tag/:tagId/vote/user/:userId', [authenticate, authorize], api.error.notImplemented, []);
 	s.del('/v2/task/:taskId/tag/:tagId/vote/user/:userId', [authenticate, authorize], api.error.notImplemented, []);
-	s.put('/v2/task/:taskId/tag/:tagId/vote/user/:userId/:vote', [authenticate, authorize], api.error.notImplemented, []);
+	s.put('/v2/task/:taskId/tag/:tagId/vote/user/:userId/:vote', [authenticate, authorize], api.vote.cast, []);
 	
 	s.get('/v2/task/:taskId/submission/:submissionId/votes', [authenticate], api.error.notImplemented, []);
 	s.get('/v2/task/:taskId/submission/:submissionId/vote/user/:userId', [authenticate, authorize], api.error.notImplemented, []);
 	s.del('/v2/task/:taskId/submission/:submissionId/vote/user/:userId', [authenticate, authorize], api.error.notImplemented, []);
-	s.put('/v2/task/:taskId/submission/:submissionId/vote/user/:userId/:vote', [authenticate, authorize], api.error.notImplemented, []);
+	s.put('/v2/task/:taskId/submission/:submissionId/vote/user/:userId/:vote', [authenticate, authorize], api.vote.cast, []);
 	
 	s.get('/v2/task/:taskId/submission/:submissionId/tag/:tagId/votes', [authenticate], api.error.notImplemented, []);
 	s.get('/v2/task/:taskId/submission/:submissionId/tag/:tagId/vote/user/:userId', [authenticate, authorize], api.error.notImplemented, []);
 	s.del('/v2/task/:taskId/submission/:submissionId/tag/:tagId/vote/user/:userId', [authenticate, authorize], api.error.notImplemented, []);
-	s.put('/v2/task/:taskId/submission/:submissionId/tag/:tagId/vote/user/:userId/:vote', [authenticate, authorize], api.error.notImplemented, []);
+	s.put('/v2/task/:taskId/submission/:submissionId/tag/:tagId/vote/user/:userId/:vote', [authenticate, authorize], api.vote.cast, []);
 
 };
 

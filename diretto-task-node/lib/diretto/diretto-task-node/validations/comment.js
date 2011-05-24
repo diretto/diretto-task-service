@@ -22,7 +22,7 @@ module.exports = function(data, response, next, callback) {
 	}
 	
 	//Check tag
-	if (!(typeof (data.content) == 'string' && data.content.length >= TAG_MIN_LENGTH && data.content.length <= TAG_MAX_LENGTH)) {
+	if (!(typeof (data.content) == 'string' && data.content.length >= COMMENT_MIN_LENGTH && data.content.length <= COMMENT_MAX_LENGTH)) {
 		fail("Invalid comment.");
 		return;
 	}
