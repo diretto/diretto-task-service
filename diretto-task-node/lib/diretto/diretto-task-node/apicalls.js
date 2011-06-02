@@ -1,36 +1,35 @@
 var crypto = require('crypto');
-
 var uuid = require('node-uuid');
-
-var validate = {
-		task : require('./validations/task.js'),
-		basetag : require('./validations/basetag.js'),
-		comment : require('./validations/comment.js'),
-		submission : require('./validations/submission.js')
-};
-
-var assertion = {
-		documentExists : require('./assertions/document-exists.js'),
-		taskExists : require('./assertions/task-exists.js'),
-		tagExists : require('./assertions/tag-exists.js'),
-		submissionExists : require('./assertions/submission-exists.js'),
-};
-
-var helper = {
-		idResource : require('./helper/id-tagged-resource.js'),
-};
-
-var CONSTANTS = require('./constants.js');
-var ENTRY = CONSTANTS.ENTRY;
 
 require("rfc3339date");
 
-module.exports = function(taskNode) {
+module.exports = function(db) {
 
-	var db = taskNode.db;
+//	var db = taskNode.db;
+
+	var validate = {
+			task : require('./validations/task.js'),
+			basetag : require('./validations/basetag.js'),
+			comment : require('./validations/comment.js'),
+			submission : require('./validations/submission.js')
+	};
+
+	var assertion = {
+			documentExists : require('./assertions/document-exists.js'),
+			taskExists : require('./assertions/task-exists.js'),
+			tagExists : require('./assertions/tag-exists.js'),
+			submissionExists : require('./assertions/submission-exists.js'),
+	};
+
+	var helper = {
+			idResource : require('./helper/id-tagged-resource.js'),
+	};
+
+	var CONSTANTS = require('./constants.js');
+	var ENTRY = CONSTANTS.ENTRY;
+	
 	
 	var _notImplemented = function(req, res, next) {
-		console.log(db);
 		res.send(501, {
 			error : {
 				reason : "Not yet implemented"
@@ -38,15 +37,6 @@ module.exports = function(taskNode) {
 		});
 		next();
 	};
-	
-// var taskExists = function(taskId, callback){
-// if(true){
-// callback(null,taskId);
-// }
-// else{
-// callback({error:{reason:"not found"}},null);
-// }
-// };
 
 	return {
 

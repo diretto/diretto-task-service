@@ -1,4 +1,8 @@
-
+/**
+ * Global constants
+ * 
+ * @author Benjamin Erb
+ */
 module.exports.ENTRY = {
 	TASK : {
 		TYPE : 'task',
