@@ -1,5 +1,5 @@
 /**
- *
+ * Error handler
  *
  * @author Benjamin Erb
  */

@@ -1,5 +1,5 @@
 /**
- *
+ * Index Handler
  *
  * @author Benjamin Erb
  */

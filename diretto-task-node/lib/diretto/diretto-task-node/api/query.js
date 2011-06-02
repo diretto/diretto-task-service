@@ -1,7 +1,7 @@
 var crypto = require('crypto');
 
 /**
- *
+ * Query handler
  *
  * @author Benjamin Erb
  */
