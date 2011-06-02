@@ -39,25 +39,30 @@ var utils = require('./utils');
  * @param {Object} options the usual pattern with:
  *   - url: base url to communicate with (required).
  *   - path: HTTP Resource (default: '/' || path from url).
+ *   - headers: Any additional HTTP headers to send on all requests.
  *   - contentType: one of the supported serialization formats, which is
  *       either `application/json` or application/x-www-form-urlencoded. Default
  *       is JSON.
  *   - version: Default version to use in x-api-version (optional).
  *   - retryOptions: options to pass to node-retry. Defaults to 3 retries after
  *       a 500ms wait.
+ *   - noContentMD5: skip content-md5 checking.
  *
  *
  */
 function RestClient(options) {
   if (!options) throw new TypeError('options is required');
 
-  if (!(!options.url !== !options.socketPath)) // JS XOR...
+  // Stupid JS not having an XOR, and jslint hating the tricky way...
+  if (!(options.url || options.socketPath) ||
+      (options.url && options.socketPath))
     throw new TypeError('One of options.url, options.socketPath are required');
 
   if (options.url) {
     this.url = url.parse(options.url);
     this.proto = http;
-    if (this.url.protocol === 'https:') this.proto = https;
+    if (this.url.protocol === 'https:')
+      this.proto = https;
   }
   if (options.socketPath) {
     this.socketPath = options.socketPath;
@@ -65,12 +70,26 @@ function RestClient(options) {
   }
   assert.ok(this.proto);
 
-  this.path = options.path || url.pathname || '/';
+  // https://github.com/joyent/node/issues/711 introduced a bug, IMO,
+  // where `pathname=="/"` even for, e.g., "http://example.com". Ignore
+  // the '/' in that case.
+  this.path = options.path || '';
+  if (!this.path &&
+      this.url &&
+      !(this.url.pathname === '/' &&
+        options.url[options.url.length-1] !== '/')) {
+    this.path = this.url.pathname;
+  }
+
   this.headers = {
     Accept: 'application/json'
   };
+
   if (options.version)
     this.headers['x-api-version'] = options.version;
+
+  if (options.headers)
+    utils.extend(options.headers, this.headers);
 
   this.retryOptions = options.retryOptions || { retries: 3, minTimeout: 500 };
 
@@ -85,8 +104,12 @@ function RestClient(options) {
   } else {
     this.contentType = 'application/json';
   }
+  this.noContentMD5 = options.noContentMD5;
 
-  log.trace('RestClient: constructed %o', this);
+  if (log.trace()) {
+    log.trace('RestClient: constructed %s',
+              require('util').inspect(this, false, 1));
+  }
 }
 
 
@@ -102,22 +125,25 @@ function RestClient(options) {
  * @callback {Function} (optional) callback of the form f(err, obj, headers).
  */
 RestClient.prototype.put = function(options, callback) {
-  log.trace('RestClient.put options=%o', options);
   var args = this._processArguments([200, 201], 'PUT', options, callback);
   var opts = args.options;
   var cb = args.callback;
 
-  this._request(args.options, function(err, code, headers, obj) {
+  this._request(args.options, function(err, code, headers, obj, res) {
     if (err) return cb(err);
     if (opts.expect.indexOf(code) === -1) {
       return cb(newError({
         httpCode: code,
-        message: 'HTTP code ' + code + ' not in ' + util.inspect(opts.expect),
-        details: obj
+        details: {
+          expected: opts.expect,
+          statusCode: code,
+          headers: headers,
+          object: obj
+        }
       }));
     }
 
-    return callback(null, obj, headers);
+    return cb(null, obj, headers);
   });
 };
 
@@ -139,17 +165,21 @@ RestClient.prototype.post = function(options, callback) {
   var opts = args.options;
   var cb = args.callback;
 
-  this._request(args.options, function(err, code, headers, obj) {
+  this._request(args.options, function(err, code, headers, obj, res) {
     if (err) return cb(err);
     if (opts.expect.indexOf(code) === -1) {
       return cb(newError({
         httpCode: code,
-        message: 'HTTP code ' + code + ' not in ' + util.inspect(opts.expect),
-        details: obj
+        details: {
+          expected: opts.expect,
+          statusCode: code,
+          headers: headers,
+          object: obj
+        }
       }));
     }
 
-    return callback(null, obj, headers);
+    return cb(null, obj, headers);
   });
 };
 
@@ -170,17 +200,21 @@ RestClient.prototype.get = function(options, callback) {
   var opts = args.options;
   var cb = args.callback;
 
-  this._request(args.options, function(err, code, headers, obj) {
+  this._request(args.options, function(err, code, headers, obj, res) {
     if (err) return cb(err);
     if (opts.expect.indexOf(code) === -1) {
       return cb(newError({
         httpCode: code,
-        message: 'HTTP code ' + code + ' not in ' + util.inspect(opts.expect),
-        details: obj
+        details: {
+          expected: opts.expect,
+          statusCode: code,
+          headers: headers,
+          object: obj
+        }
       }));
     }
 
-    return callback(null, obj, headers);
+    return cb(null, obj, headers, res);
   });
 };
 
@@ -202,17 +236,21 @@ RestClient.prototype.del = function(options, callback) {
   var opts = args.options;
   var cb = args.callback;
 
-  this._request(args.options, function(err, code, headers, obj) {
+  this._request(args.options, function(err, code, headers, obj, res) {
     if (err) return cb(err);
     if (opts.expect.indexOf(code) === -1) {
       return cb(newError({
         httpCode: code,
-        message: 'HTTP code ' + code + ' not in ' + util.inspect(opts.expect),
-        details: obj
+        details: {
+          expected: opts.expect,
+          statusCode: code,
+          headers: headers,
+          object: obj
+        }
       }));
     }
 
-    return callback(null, headers);
+    return cb(null, headers);
   });
 };
 
@@ -233,17 +271,21 @@ RestClient.prototype.head = function(options, callback) {
   var opts = args.options;
   var cb = args.callback;
 
-  this._request(args.options, function(err, code, headers, obj) {
+  this._request(args.options, function(err, code, headers, obj, res) {
     if (err) return cb(err);
     if (opts.expect.indexOf(code) === -1) {
       return cb(newError({
         httpCode: code,
-        message: 'HTTP code ' + code + ' not in ' + util.inspect(opts.expect),
-        details: obj
+        details: {
+          expected: opts.expect,
+          statusCode: code,
+          headers: headers,
+          object: obj
+        }
       }));
     }
 
-    return callback(null, headers);
+    return cb(null, headers);
   });
 };
 
@@ -274,7 +316,7 @@ RestClient.prototype._request = function(options, callback) {
   }
 
   var operation = retry.operation(self.retryOptions);
-  operation.try(function(attempt) {
+  operation.start(function(attempt) {
     options.headers.Date = utils.newHttpDate(new Date());
     log.trace('RestClient(attempt=%d): issuing request %o', attempt, options);
     var req = self.proto.request(options, function(res) {
@@ -299,25 +341,37 @@ RestClient.prototype._request = function(options, callback) {
       });
 
       res.on('end', function() {
-        var len = parseInt(res.headers['content-length'], 10);
-        if (res.body.length !== len) {
-          if (operation.retry(new Error())) return;
+        log.trace('RestClient: %s %s => body=%s',
+                  options.method, options.path, res.body ? res.body : ' ');
 
-          return callback(newError({
-            httpCode: HttpCodes.InternalError,
-            restCode: RestCodes.InvalidHeader,
-            message: 'Content-Length ' + len + ' didn\'t match: ' +
-              res.body.length,
-            details: res.headers
-          }));
+        if (res.headers['content-length']) {
+          var len = parseInt(res.headers['content-length'], 10);
+          if (res.body.length !== len) {
+            log.trace('RestClient: %s %s, content-length mismatch',
+                      options.method, options.path);
+            if (operation.retry(new Error())) return;
+
+            return callback(newError({
+              httpCode: HttpCodes.InternalError,
+              restCode: RestCodes.InvalidHeader,
+              message: 'Content-Length ' + len + ' didn\'t match: ' +
+                res.body.length
+            }));
+          }
         }
 
-        if (res.headers['content-md5']) {
+        if (res.headers['content-md5'] && !self.noContentMD5) {
           var hash = crypto.createHash('md5');
           hash.update(res.body);
-          if (res.headers['content-md5'] !== hash.digest('base64')) {
+          var digest = hash.digest('base64');
+          if (res.headers['content-md5'] !== digest) {
+            log.trace('RestClient: %s %s, content-md5 mismatch',
+                      options.method, options.path);
             err = newError({
-              details: 'Content-MD5 mismatch'
+              httpCode: HttpCodes.InternalError,
+              restCode: RestCodes.InvalidHeader,
+              message: 'Content-MD5 ' + res.headers['content-md5'] +
+                ' didn\'t match: ' + digest
             });
             if (operation.retry(err)) return;
             return callback(err);
@@ -325,23 +379,34 @@ RestClient.prototype._request = function(options, callback) {
         }
 
         if (res.body.length > 0) {
-          try {
-            if (res.headers['content-type'] === 'application/json') {
+          switch (res.headers['content-type']) {
+
+          case 'application/json':
+            try {
               res.params = JSON.parse(res.body);
-            } else {
-              res.params = {};
+            } catch (e) {
+              return callback(newError({
+                httpCode: HttpCodes.InternalError,
+                restCode: RestCodes.InvalidHeader,
+                message: 'Content-Type was JSON, but it\'s not parsable',
+                error: e
+              }));
             }
-          } catch (e) {
-            return callback(newError({
-              httpCode: HttpCodes.InternalError,
-              restCode: RestCodes.InvalidHeader,
-              message: 'Content-Type was JSON, but it\'s not parsable',
-              error: e
-            }));
+            break;
+
+          case 'application/x-www-form-urlencoded':
+            res.params = querystring.parse(res.body);
+            break;
+
+          default:
+            res.params = {};
+            break;
           }
         }
 
-        callback(null, res.statusCode, res.headers, res.params);
+        log.trace('RestClient: %s %s: issuing callback',
+                  options.method, options.path);
+        callback(null, res.statusCode, res.headers, res.params, res);
       });
     });
 
@@ -371,10 +436,10 @@ RestClient.prototype._newHttpOptions = function(method) {
     method: method,
     path: self.path.toString()
   };
-  opts.headers._restify_extend(self.headers);
+  utils.extend(self.headers, opts.headers);
   if (self.url) {
-    opts.host = self.url.host.toString();
-    opts.port = self.url.port.toString();
+    opts.host = self.url.hostname.toString();
+    opts.port = (self.url.port || 80).toString();
   } else {
     opts.socketPath = self.socketPath.toString();
   }
@@ -388,14 +453,26 @@ RestClient.prototype._processArguments = function(expect,
                                                   options,
                                                   callback) {
   var opts = this._newHttpOptions(method);
+
   if (options) {
     if (typeof(options) === 'function') {
       callback = options;
+    } else if (typeof(options) === 'string') {
+      opts.path = options;
+    } else if (typeof(options) === 'object') {
+      var headers = opts.headers;
+      var path = opts.path + options.path;
+      utils.extend(options, opts);
+      opts.path = path;
+      opts.headers = headers;
+      if (options.headers)
+        utils.extend(options.headers, opts.headers);
     } else {
-      opts._restify_extend(options);
+      throw new TypeError('options is an invalid type: ' + typeof(options));
     }
   }
-  if (callback && typeof(callback) !== 'function')
+
+  if (!callback || typeof(callback) !== 'function')
     throw new TypeError('callback must be a function');
 
   if (opts.query && typeof(opts.query) === 'object') {
@@ -406,7 +483,7 @@ RestClient.prototype._processArguments = function(expect,
   if (!(opts.expect instanceof Array)) {
     var _save = opts.expect;
     opts.expect = [];
-    if (_save instanceof Number)
+    if (typeof(_save) === 'number')
       opts.expect.push(_save);
   }
 
