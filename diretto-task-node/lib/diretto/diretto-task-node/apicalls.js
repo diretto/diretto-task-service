@@ -29,7 +29,15 @@ module.exports = function(taskNode) {
 
 	var db = taskNode.db;
 	
-	
+	var _notImplemented = function(req, res, next) {
+		console.log(db);
+		res.send(501, {
+			error : {
+				reason : "Not yet implemented"
+			}
+		});
+		next();
+	};
 	
 // var taskExists = function(taskId, callback){
 // if(true){
@@ -43,6 +51,7 @@ module.exports = function(taskNode) {
 	return {
 
 		index : {
+			
 			get : function(req, res, next) {
 				res.send(200, {
 					"api" : {
@@ -74,9 +83,11 @@ module.exports = function(taskNode) {
 				});
 				return next();
 			}
+	
 		},
 
 		task : {
+			
 			create : function(req, res, next) {
 				validate.task(req.params, res, next, function(data){
 					data._id = ENTRY.TASK.PREFIX + "-" +uuid();
@@ -98,17 +109,16 @@ module.exports = function(taskNode) {
 				});
 				
 			},
-			get: function(req, res, next) {
-				next();
-			},
-			getSnapshot : function(req, res, next) {
-				next();
-			},
-			fetchSnapshots : function(req, res, next) {
-				next();
-			}
+			
+			get: _notImplemented,
+			
+			getSnapshot: _notImplemented,
+			
+			fetchSnapshots: _notImplemented
 		
 		},
+		
+		
 		submission : {
 			create : function(req, res, next) {
 				validate.submission(req.params, res, next, function(data){
@@ -175,9 +185,17 @@ module.exports = function(taskNode) {
 						});
 					});
 				});
-			}
+			},
+			
+			get: _notImplemented,
+			
+			getAll : _notImplemented
+			
 		},
-		comment : {			
+		
+		
+		comment : {		
+			
 			create : function(req, res, next) {			
 				validate.comment(req.params, res, next, function(data){
 					assertion.taskExists(req.uriParams, db, function(exists){
@@ -206,9 +224,16 @@ module.exports = function(taskNode) {
 						});
 					});
 				});
-			}
+			},
+			
+			getAll : _notImplemented,
+			
+			get: _notImplemented
+			
 		},
+		
 		tag : {
+			
 			create : function(req, res, next) {
 				validate.basetag(req.params, res, next, function(data){
 					console.log(JSON.stringify(data));
@@ -218,10 +243,27 @@ module.exports = function(taskNode) {
 				});
 				
 			},
+			
+			get: _notImplemented
+			
 		},
-		query : {},
+		
+		
+		query : {
+			
+			create : _notImplemented,
+			
+			common : _notImplemented,
+			
+			forward: _notImplemented,
+			
+			resultPage : _notImplemented
+
+		},
+		
 		
 		vote : {
+			
 			cast : function(req, res, next) {
 				if(!req.uriParams.vote || !req.uriParams.userId || !(req.uriParams.vote === "up" || req.uriParams.vote === "down")){
 					res.send(400, null, {});
@@ -254,6 +296,7 @@ module.exports = function(taskNode) {
 				});
 				
 			},
+			
 			undo : function(req, res, next) {
 				var data = {};
 				data.userId = req.uriParams.userId;
@@ -269,44 +312,24 @@ module.exports = function(taskNode) {
 					console.log(err);
 					console.log(result);
 					console.log(JSON.stringify(data));
-					res.send(201, null, {'Location': "bla"});
+					res.send(204, null, {'Location': "bla"});
 					next();
 					return;							
 				});
 			},
-// get : function(req, res, next) {
-//				
-// },
-// getAll : function(req, res, next) {
-//				
-// },
+			
+			get  : _notImplemented,
+			
+			getAll  : _notImplemented
+			
 		},
 
 		
 		error : {
-			notImplemented : function(req, res, next) {
-				// console.log(req.uriParams);
-				// console.dir(req._url);
-				// console.dir(req.params);
-				console.log(db);
-				db.get("863780aac3c39f10cee2f01fd0000f17", function(err, doc) {
-					if (err) {
-						console.dir(err);
-					}
-					else {
-						console.dir(doc);
-					}
-
-				});
-				res.send(501, {
-					error : {
-						reason : "Not yet implemented"
-					}
-				});
-			},
+			
+			notImplemented : _notImplemented
+			
 		}
-	
-
 	}
 	
 

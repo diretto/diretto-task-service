@@ -1,5 +1,5 @@
 /**
- * Extracts a valid set of resource identifiers out of a URI parameters. 
+ * Extracts a valid set of resource identifiers out of a URI parameters.
  */
 module.exports = function(p) {
 	
@@ -31,7 +31,7 @@ module.exports = function(p) {
 	else if(p.taskId){
 		return {
 				taskId: p.taskId
-		} ;
+		};
 	}
 	else{
 		return null;
