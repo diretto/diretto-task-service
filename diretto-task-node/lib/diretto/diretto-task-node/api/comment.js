@@ -47,7 +47,7 @@ module.exports = function(h) {
 		
 		create : function(req, res, next) {			
 			validateComment(req.params, res, next, function(data){
-				h.assertion.taskExists(req.uriParams, db, function(exists){
+				h.assertion.taskExists(req.uriParams, h.db, function(exists){
 					if(!exists){
 						res.send(404, {
 							   "error":{
@@ -57,20 +57,34 @@ module.exports = function(h) {
 						next();
 						return;
 					}
-					data.id = uuid();
+					data.id = h.uuid();
 					data.creationTime = new Date().toRFC3339UTCString();
 					data.creator = req.authenticatedUser;
 					data.votes = {up:[], down:[]};
 					
-					// TODO: improve call
-					h.db.request('POST', "/tasks/_design/tasks/_update/addcomment/t-"+req.uriParams.taskId, data, function(err,result){
-						console.log(err);
-						console.log(result);
-						console.log(JSON.stringify(data));
+					
+					h.util.updateHandler.retryable('POST', "/tasks/_design/tasks/_update/addcomment/t-"+req.uriParams.taskId, data, function(err,result){
+						if(err){
+							console.log("Error: ");	
+							console.log(err);
+						}
+						else{
+							console.log("Result: "+JSON.stringify(result));	
+						}
 						res.send(201, null, {'Location': "bla"});
 						next();
 						return;							
 					});
+					
+					// TODO: improve call
+//					h.db.request('POST', "/tasks/_design/tasks/_update/addcomment/t-"+req.uriParams.taskId, data, function(err,result){
+//						console.log(err);
+//						console.log(result);
+//						console.log(JSON.stringify(data));
+//						res.send(201, null, {'Location': "bla"});
+//						next();
+//						return;							
+//					});
 				});
 			});
 		},

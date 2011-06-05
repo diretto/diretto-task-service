@@ -54,7 +54,13 @@ module.exports = function(options) {
 			
 			options : options,
 			
+			util : {
+				updateHandler : require('./util/wrapped-update-handler.js')(db)
+			},
+			
 			db : db,
+			
+			uuid : uuid,
 			
 			assertion : {
 					documentExists : require('./assertions/document-exists.js'),
