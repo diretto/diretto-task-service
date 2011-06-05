@@ -4,11 +4,11 @@ require("rfc3339date");
 
 /**
  * Submission handler
- *
+ * 
  * @author Benjamin Erb
  */
 module.exports = function(h) {
-	
+
 	var validateSubmission = function(data, response, next, callback) {
 		var failed = false;
 		var fail = function(msg) {
@@ -50,79 +50,104 @@ module.exports = function(h) {
 			});
 		}
 	};
-	
+
 	return {
-		
+
 		create : function(req, res, next) {
-			validateSubmission(req.params, res, next, function(data){
-				
+			validateSubmission(req.params, res, next, function(data) {
+
 				var md5calc = crypto.createHash('md5');
-				md5calc.update(data.document.link.href);						
-				var submissionId = md5calc.digest('hex');						
+				md5calc.update(data.document.link.href);
+				var submissionId = md5calc.digest('hex');
 				// TODO: extract document ID as submission ID
-				
-				h.assertion.taskExists(req.uriParams.taskId, db, function(taskExists, task){
-					if(!taskExists){
+
+				h.assertion.taskExists(req.uriParams.taskId, h.db, function(taskExists, task) {
+					if (!taskExists) {
 						res.send(404, {
-							   "error":{
-								      "reason":"Task not found."
-								   }
-								},{});
+							"error" : {
+								"reason" : "Task not found."
+							}
+						}, {});
 						next();
 						return;
 					}
-					h.assertion.submissionExists(req.uriParams.taskId,req.uriParams.submissionId, db, function(submissionExists){
-						if(submissionExists){
+					h.assertion.submissionExists(req.uriParams.taskId, req.uriParams.submissionId, h.db, function(submissionExists) {
+						if (submissionExists) {
 							res.send(409, {
-								   "error":{
-									      "reason":"Document has already been submitted."
-									   }
-									},{});
+								"error" : {
+									"reason" : "Document has already been submitted."
+								}
+							}, {});
 							next();
 							return;
 						}
-						h.assertion.documentExists(data.document.link.href, function(documentExists, direttoDoc){
-							if(!documentExists){
+						h.assertion.documentExists(data.document.link.href, function(documentExists, direttoDoc) {
+							if (!documentExists) {
 								res.send(404, {
-									   "error":{
-										      "reason":"Document does not exist."
-										   }
-										},{});
+									"error" : {
+										"reason" : "Document does not exist."
+									}
+								}, {});
 								next();
 								return;
-								
+
 							}
-							//TODO check task vs direttoDoc
+							// TODO check task vs direttoDoc
 							var submission = {
 								id : submissionId,
 								creationTime : new Date().toRFC3339UTCString(),
 								creator : req.authenticatedUser,
 								votes : {
 									up : [],
-									down :[]
+									down : []
 								},
 								tags : {},
-								document : data.document								
+								document : data.document
 							};
-							
-							// TODO: improve call
-							h.db.request('POST', "/tasks/_design/tasks/_update/addsubmission/t-"+req.uriParams.taskId, submission, function(err,result){
-								console.log(err);
-								console.log(result);
-								console.log(JSON.stringify(data));
-								res.send(201, null, {'Location': "bla"});
-								next();
-								return;							
-							});								
+
+							h.util.updateHandler.retryable('POST', "/tasks/_design/tasks/_update/addsubmission/t-" + req.uriParams.taskId, submission, function(err, result) {
+								if (err) {
+									if (err.error && err.error === 'duplicate') {
+										res.send(409, {
+											"error" : {
+												"reason" : "Submission already exists."
+											}
+										}, {});
+										return next();
+									}
+									else if (err.error && err.error === 'not found') {
+										res.send(404, {
+											"error" : {
+												"reason" : "Resource not found."
+											}
+										}, {});
+										return next();
+									}									
+									else {
+										res.send(500, {
+											"error" : {
+												"reason" : "Internal server error. Please try again later."
+											}
+										}, {});
+										return next();
+									}
+								}
+								else {
+									res.send(201, null, {
+										'Location' : h.util.uri.submission(req.uriParams.taskId, submission.id)
+									});
+									return next();
+								}
+							});
 						});
 					});
 				});
 			});
 		},
-		
-		get: h.responses.notImplemented,
-		
+
+		get : h.responses.notImplemented,
+
 		getAll : h.responses.notImplemented
-		
+
 	};
 };

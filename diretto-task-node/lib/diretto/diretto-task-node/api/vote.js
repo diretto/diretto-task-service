@@ -64,15 +64,29 @@ module.exports = function(h) {
 				return;
 			}
 						
-
-			// TODO: improve call
-			h.db.request('POST', "/tasks/_design/tasks/_update/vote/t-"+req.uriParams.taskId, data, function(err,result){
-				console.log(err);
-				console.log(result);
-				console.log(JSON.stringify(data));
-				res.send(201, null, {'Location': "bla"});
-				next();
-				return;							
+			h.util.updateHandler.retryable('POST', "/tasks/_design/tasks/_update/vote/t-"+req.uriParams.taskId, data, function(err,result){
+				if (err) {
+					if (err.error && err.error === 'not found') {
+						res.send(404, {
+							"error" : {
+								"reason" : "Resource not found."
+							}
+						}, {});
+						return next();
+					}
+					else {
+						res.send(500, {
+							"error" : {
+								"reason" : "Internal server error. Please try again later."
+							}
+						}, {});
+						return next();
+					}
+				}
+				else {
+					res.send(202, null, {});
+					return next();
+				}						
 			});
 			
 		},
@@ -88,14 +102,31 @@ module.exports = function(h) {
 				return;
 			}
 			
-			h.db.request('POST', "/tasks/_design/tasks/_update/undovote/t-"+req.uriParams.taskId, data, function(err,result){
-				console.log(err);
-				console.log(result);
-				console.log(JSON.stringify(data));
-				res.send(204, null, {'Location': "bla"});
-				next();
-				return;							
+			h.util.updateHandler.retryable('POST', "/tasks/_design/tasks/_update/undovote/t-"+req.uriParams.taskId, data, function(err,result){
+				if (err) {
+					if (err.error && err.error === 'not found') {
+						res.send(404, {
+							"error" : {
+								"reason" : "Resource not found."
+							}
+						}, {});
+						return next();
+					}
+					else {
+						res.send(500, {
+							"error" : {
+								"reason" : "Internal server error. Please try again later."
+							}
+						}, {});
+						return next();
+					}
+				}
+				else {
+					res.send(204, null, {});
+					return next();
+				}
 			});
+			
 		},
 		
 		get  : h.responses.notImplemented,

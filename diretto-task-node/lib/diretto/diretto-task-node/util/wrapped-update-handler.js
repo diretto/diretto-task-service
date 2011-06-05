@@ -1,7 +1,6 @@
 module.exports = function(db) {
 
 	var isRetryable = function(err) {
-		console.log(err);
 		if(err && err.error === 'conflict'){
 			return true;	
 		}
@@ -21,12 +20,15 @@ module.exports = function(db) {
 			else if(result.status && !(result.status === 200 || result.status === 201 || result.status === 202)){
 				var error = {"status" : result.status};
 				if(result.status === 409){
-					error.error = "conflict";
+					error.error = "duplicate";
 				}
 				else{
 					error.error = "error";
 				}
 				callback(error);
+			}
+			else if(result.error){
+				callback(result);
 			}
 			else{
 				callback(null, result);
@@ -39,19 +41,16 @@ module.exports = function(db) {
 	// function(err,result){
 
 	var retryingUpdateHandler = function retryingUpdateHandler(method, uri, data, callback, attempts, factors, backoff) {
-		console.log(attempts);
 		if (attempts >= 1) {
 			request(method, uri, data, function(err, result) {
-				console.log(err);
-				console.log(result);
 				if (err) {
 					if(attempts <= 1){
 						callback(err);
 					}
 					else{
 						if (isRetryable(err)) {
-							var nextBackoff = factors * backoff;
-							console.log(nextBackoff);
+							var nextBackoff = Math.floor(factors * backoff + (Math.random()*backoff));
+							console.log("RETRYING in "+nextBackoff);
 							setTimeout(function() {
 								retryingUpdateHandler(method, uri, data, callback, attempts - 1, factors, nextBackoff);
 							}, nextBackoff);
@@ -74,7 +73,7 @@ module.exports = function(db) {
 
 	return {
 		retryable : function(method, uri, data, callback) {
-			return retryingUpdateHandler(method, uri, data, callback, 10, 1.2, 300);
+			return retryingUpdateHandler(method, uri, data, callback, 6, 1.1, 80);
 		}
 	}
 

@@ -2,7 +2,7 @@ require("rfc3339date");
 
 /**
  * Task handler
- *
+ * 
  * @author Benjamin Erb
  */
 module.exports = function(h) {
@@ -92,22 +92,31 @@ module.exports = function(h) {
 	return {
 		
 		create : function(req, res, next) {
+
 			validateTask(req.params, res, next, function(data){
-				data._id = ENTRY.TASK.PREFIX + "-" +uuid();
+				var taskId =h.uuid();
+				data._id = h.CONSTANTS.TASK.PREFIX + "-" +taskId;
 				data.creationTime = new Date().toRFC3339UTCString();
 				data.creator = req.authenticatedUser;
-				data.type = ENTRY.TASK.TYPE;
+				data.type = h.CONSTANTS.TASK.TYPE;
 				data.visible = true;
 				data.votes = {up:[], down:[]};
 				data.comments = {};
-				data.tags = { };
+				data.tags = {};
 				data.submissions = {};
 				h.db.save(data, function(err, doc){
-					console.dir(err);
-					console.dir(doc);
-					// TODO insert correct URI
-					res.send(201, null, {'Location': "bla"});
-					next();
+					if(err){
+						res.send(500, {
+							"error" : {
+								"reason" : "Internal server error. Please try again later."
+							}
+						}, {});
+						return next();
+					}
+					else{
+						res.send(201, null, {'Location': h.util.uri.task(taskId)});
+						return next();
+					}
 				});
 			});
 			

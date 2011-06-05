@@ -54,8 +54,9 @@ module.exports = function(options) {
 			
 			options : options,
 			
-			util : {
-				updateHandler : require('./util/wrapped-update-handler.js')(db)
+			util : {				
+				updateHandler : require('./util/wrapped-update-handler.js')(db),
+				uri : require('./util/uri-builder.js')(options)
 			},
 			
 			db : db,
@@ -65,7 +66,7 @@ module.exports = function(options) {
 			assertion : {
 					documentExists : require('./assertions/document-exists.js'),
 					taskExists : require('./assertions/task-exists.js'),
-					tagExists : require('./assertions/tag-exists.js'),
+					tagExists : require('./assertions/basetag-exists.js'),
 					submissionExists : require('./assertions/submission-exists.js'),
 			},
 							
@@ -106,6 +107,8 @@ module.exports = function(options) {
 		
 		tag : require('./api/tag.js')(apiHelper),
 		
+		basetag : require('./api/basetag.js')(apiHelper),
+		
 		task : require('./api/task.js')(apiHelper),
 		
 		vote : require('./api/vote.js')(apiHelper),
@@ -121,6 +124,18 @@ module.exports = function(options) {
 			}
 		};
 	};
+	
+	/**
+	 * Ugly logging so far
+	 */
+	var logging = function(req, res, next) {
+		var logEntry = new Date().toUTCString()+" "+req.connection.remoteAddress+": "+req.method+" "+req.url;
+		console.log(logEntry);
+		
+		if(next){
+			next();
+		}
+	};
 
 	/**
 	 * User authentication If valid, the username will be stored as
@@ -132,7 +147,7 @@ module.exports = function(options) {
 				res.send(err.code || 500, _errorJSON("Authentication required"), {
 					'WWW-Authenticate' : 'Basic realm=diretto Task API Node Access'
 				});
-				console.log(err);
+				logging(req, res);
 			}
 			else {
 				req.authenticatedUser = user;
@@ -150,77 +165,81 @@ module.exports = function(options) {
 			res.send(err.code || 500, _errorJSON("Authentication required"), {
 				'WWW-Authenticate' : 'Basic realm=diretto Task API Node Access'
 			});
+			logging(req, res);
 		}
 		else if (!req.uriParams.userId || (req.authenticatedUser !== req.uriParams.userId)) {
 			res.send(403, _errorJSON("Missing authorization for request"));
+			logging(req, res);
 		}
 		else {
 			next();
 		}
 	};
 
+
+
 	// Index
-	server.get('/v2', [], api.index.get, []);
+	server.get('/v2', [], api.index.get, [logging]);
 
 	// Query
-	server.post('/v2/query', [ authenticate ], api.query.create, []);
-	server.get('/v2/query/common/:type', [ authenticate ], api.query.common, []);
-	server.get('/v2/query/stored/:queryId', [ authenticate ], api.query.forward, []);
-	server.get('/v2/query/stored/:queryId/cursor/:cursorId', [ authenticate ], api.query.resultPage, []);
+	server.post('/v2/query', [ authenticate ], api.query.create, [logging]);
+	server.get('/v2/query/common/:type', [ authenticate ], api.query.common, [logging]);
+	server.get('/v2/query/stored/:queryId', [ authenticate ], api.query.forward, [logging]);
+	server.get('/v2/query/stored/:queryId/cursor/:cursorId', [ authenticate ], api.query.resultPage, [logging]);
 
 	// Task
-	server.get('/v2/task/:taskId', [ authenticate ], api.task.get, []);
-	server.get('/v2/task/:taskId/snapshot', [ authenticate ], api.task.getSnapshot, []);
-	server.post('/v2/tasks', [ authenticate ], api.task.create, []);
-	server.post('/v2/tasks/snapshots', [], api.task.fetchSnapshots, []);
+	server.get('/v2/task/:taskId', [ authenticate ], api.task.get, [logging]);
+	server.get('/v2/task/:taskId/snapshot', [ authenticate ], api.task.getSnapshot, [logging]);
+	server.post('/v2/tasks', [ authenticate ], api.task.create, [logging]);
+	server.post('/v2/tasks/snapshots', [], api.task.fetchSnapshots, [logging]);
 
 	// Submission
-	server.post('/v2/task/:taskId/submissions', [ authenticate ], api.submission.create, []);
-	server.get('/v2/task/:taskId/submissions', [ authenticate ], api.submission.getAll, []);
-	server.get('/v2/task/:taskId/submission/:submissionId', [ authenticate ], api.submission.get, []);
+	server.post('/v2/task/:taskId/submissions', [ authenticate ], api.submission.create, [logging]);
+	server.get('/v2/task/:taskId/submissions', [ authenticate ], api.submission.getAll, [logging]);
+	server.get('/v2/task/:taskId/submission/:submissionId', [ authenticate ], api.submission.get, [logging]);
 
 	// Comment
-	server.post('/v2/task/:taskId/comments', [ authenticate ], api.comment.create, []);
-	server.get('/v2/task/:taskId/comments', [ authenticate ], api.comment.getAll, []);
-	server.get('/v2/task/:taskId/comment/:commentId', [ authenticate ], api.comment.get, []);
+	server.post('/v2/task/:taskId/comments', [ authenticate ], api.comment.create, [logging]);
+	server.get('/v2/task/:taskId/comments', [ authenticate ], api.comment.getAll, [logging]);
+	server.get('/v2/task/:taskId/comment/:commentId', [ authenticate ], api.comment.get, [logging]);
 
 	// Tag
-	server.post('/v2/tags', [ authenticate ], api.tag.create, []);
-	server.get('/v2/tag/:tagId', [ authenticate ], api.tag.get, []);
+	server.post('/v2/tags', [ authenticate ], api.basetag.create, [logging]);
+	server.get('/v2/tag/:tagId', [ authenticate ], api.basetag.get, [logging]);
 
-	server.post('/v2/task/:taskId/submission/:submissionId/tags', [ authenticate ], api.error.notImplemented, []);
-	server.get('/v2/task/:taskId/submission/:submissionId/tags', [ authenticate ], api.error.notImplemented, []);
-	server.get('/v2/task/:taskId/submission/:submissionId/tag/:tagId', [ authenticate ], api.error.notImplemented, []);
+	server.post('/v2/task/:taskId/submission/:submissionId/tags', [ authenticate ], api.error.notImplemented, [logging]);
+	server.get('/v2/task/:taskId/submission/:submissionId/tags', [ authenticate ], api.error.notImplemented, [logging]);
+	server.get('/v2/task/:taskId/submission/:submissionId/tag/:tagId', [ authenticate ], api.error.notImplemented, [logging]);
 
-	server.post('/v2/task/:taskId/tags', [ authenticate ], api.error.notImplemented, []);
-	server.get('/v2/task/:taskId/tags', [ authenticate ], api.error.notImplemented, []);
-	server.get('/v2/task/:taskId/tag/:tagId', [ authenticate ], api.error.notImplemented, []);
+	server.post('/v2/task/:taskId/tags', [ authenticate ], api.error.notImplemented, [logging]);
+	server.get('/v2/task/:taskId/tags', [ authenticate ], api.error.notImplemented, [logging]);
+	server.get('/v2/task/:taskId/tag/:tagId', [ authenticate ], api.error.notImplemented, [logging]);
 
 	// Vote
-	server.get('/v2/task/:taskId/comment/:commentId/votes', [ authenticate ], api.vote.getAll, []);
-	server.get('/v2/task/:taskId/comment/:commentId/vote/user/:userId', [ authenticate, authorize ], api.vote.get, []);
-	server.del('/v2/task/:taskId/comment/:commentId/vote/user/:userId', [ authenticate, authorize ], api.vote.undo, []);
-	server.put('/v2/task/:taskId/comment/:commentId/vote/user/:userId/:vote', [ authenticate, authorize ], api.vote.cast, []);
+	server.get('/v2/task/:taskId/comment/:commentId/votes', [ authenticate ], api.vote.getAll, [logging]);
+	server.get('/v2/task/:taskId/comment/:commentId/vote/user/:userId', [ authenticate, authorize ], api.vote.get, [logging]);
+	server.del('/v2/task/:taskId/comment/:commentId/vote/user/:userId', [ authenticate, authorize ], api.vote.undo, [logging]);
+	server.put('/v2/task/:taskId/comment/:commentId/vote/user/:userId/:vote', [ authenticate, authorize ], api.vote.cast, [logging]);
 
-	server.get('/v2/task/:taskId/votes', [ authenticate ], api.vote.getAll, []);
-	server.get('/v2/task/:taskId/vote/user/:userId', [ authenticate, authorize ], api.vote.get, []);
-	server.del('/v2/task/:taskId/vote/user/:userId', [ authenticate, authorize ], api.vote.undo, []);
-	server.put('/v2/task/:taskId/vote/user/:userId/:vote', [ authenticate, authorize ], api.vote.cast, []);
+	server.get('/v2/task/:taskId/votes', [ authenticate ], api.vote.getAll, [logging]);
+	server.get('/v2/task/:taskId/vote/user/:userId', [ authenticate, authorize ], api.vote.get, [logging]);
+	server.del('/v2/task/:taskId/vote/user/:userId', [ authenticate, authorize ], api.vote.undo, [logging]);
+	server.put('/v2/task/:taskId/vote/user/:userId/:vote', [ authenticate, authorize ], api.vote.cast, [logging]);
 
-	server.get('/v2/task/:taskId/tag/:tagId/votes', [ authenticate ], api.vote.getAll, []);
-	server.get('/v2/task/:taskId/tag/:tagId/vote/user/:userId', [ authenticate, authorize ], api.vote.get, []);
-	server.del('/v2/task/:taskId/tag/:tagId/vote/user/:userId', [ authenticate, authorize ], api.vote.undo, []);
-	server.put('/v2/task/:taskId/tag/:tagId/vote/user/:userId/:vote', [ authenticate, authorize ], api.vote.cast, []);
+	server.get('/v2/task/:taskId/tag/:tagId/votes', [ authenticate ], api.vote.getAll, [logging]);
+	server.get('/v2/task/:taskId/tag/:tagId/vote/user/:userId', [ authenticate, authorize ], api.vote.get, [logging]);
+	server.del('/v2/task/:taskId/tag/:tagId/vote/user/:userId', [ authenticate, authorize ], api.vote.undo, [logging]);
+	server.put('/v2/task/:taskId/tag/:tagId/vote/user/:userId/:vote', [ authenticate, authorize ], api.vote.cast, [logging]);
 
-	server.get('/v2/task/:taskId/submission/:submissionId/votes', [ authenticate ], api.vote.getAll, []);
-	server.get('/v2/task/:taskId/submission/:submissionId/vote/user/:userId', [ authenticate, authorize ], api.vote.get, []);
-	server.del('/v2/task/:taskId/submission/:submissionId/vote/user/:userId', [ authenticate, authorize ], api.vote.undo, []);
-	server.put('/v2/task/:taskId/submission/:submissionId/vote/user/:userId/:vote', [ authenticate, authorize ], api.vote.cast, []);
+	server.get('/v2/task/:taskId/submission/:submissionId/votes', [ authenticate ], api.vote.getAll, [logging]);
+	server.get('/v2/task/:taskId/submission/:submissionId/vote/user/:userId', [ authenticate, authorize ], api.vote.get, [logging]);
+	server.del('/v2/task/:taskId/submission/:submissionId/vote/user/:userId', [ authenticate, authorize ], api.vote.undo, [logging]);
+	server.put('/v2/task/:taskId/submission/:submissionId/vote/user/:userId/:vote', [ authenticate, authorize ], api.vote.cast, [logging]);
 
-	server.get('/v2/task/:taskId/submission/:submissionId/tag/:tagId/votes', [ authenticate ], api.vote.getAll, []);
-	server.get('/v2/task/:taskId/submission/:submissionId/tag/:tagId/vote/user/:userId', [ authenticate, authorize ], api.vote.get, []);
-	server.del('/v2/task/:taskId/submission/:submissionId/tag/:tagId/vote/user/:userId', [ authenticate, authorize ], api.vote.undo, []);
-	server.put('/v2/task/:taskId/submission/:submissionId/tag/:tagId/vote/user/:userId/:vote', [ authenticate, authorize ], api.vote.cast, []);
+	server.get('/v2/task/:taskId/submission/:submissionId/tag/:tagId/votes', [ authenticate ], api.vote.getAll, [logging]);
+	server.get('/v2/task/:taskId/submission/:submissionId/tag/:tagId/vote/user/:userId', [ authenticate, authorize ], api.vote.get, [logging]);
+	server.del('/v2/task/:taskId/submission/:submissionId/tag/:tagId/vote/user/:userId', [ authenticate, authorize ], api.vote.undo, [logging]);
+	server.put('/v2/task/:taskId/submission/:submissionId/tag/:tagId/vote/user/:userId/:vote', [ authenticate, authorize ], api.vote.cast, [logging]);
 
 	return {
 

@@ -106,9 +106,11 @@ http.ServerResponse.prototype.send = function(options) {
     if (_opts.code !== HttpCodes.NoContent) {
       headers['Content-Length'] = data.length;
       if (!_opts.noContentMD5) {
-        var hash = crypto.createHash('md5');
-        hash.update(data);
-        headers['Content-MD5'] = hash.digest(encoding = 'base64');
+    	  //-------------zipp
+//        var hash = crypto.createHash('md5');
+//        hash.update(data);
+//        headers['Content-MD5'] = hash.digest(encoding = 'base64');
+    	  //-------------zapp
       }
     } else {
       headers['Content-Length'] = 0;

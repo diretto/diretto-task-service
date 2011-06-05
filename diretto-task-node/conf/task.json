@@ -16,8 +16,8 @@
 			"uri":"http://localhost:5984/tasks"
 		}
 	},
-	"public": {
-		"uri" : "http://localhost/"
+	"external": {
+		"uri" : "http://localhost:8006/"
 	}
     	 
 }

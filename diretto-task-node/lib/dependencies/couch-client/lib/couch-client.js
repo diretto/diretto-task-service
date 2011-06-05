@@ -27,16 +27,20 @@ function CouchClient(url) {
   uri.__proto__ = CONNECTION_DEFAULTS;
   var revCache = {};
   
-  //start---------------
-  var agent = http.getAgent(uri.hostname, uri.port);
-  agent.maxSockets = 32;
-  
-  var updateAgent = new http.Agent({
-	  host : uri.hostname,
-	  port : uri.port		  
-  });
-  updateAgent.maxSockets = 1;
-  //end---------------
+//  //start---------------
+//  var agent = http.getAgent(uri.hostname, uri.port);
+//  agent.maxSockets = 32;
+//  
+//  var updateAgents = [];
+//  for(var i = 0;i<10;i++){
+//	  var updateAgent = updateAgents[i] = new http.Agent({
+//		  host : uri.hostname,
+//		  port : uri.port		  
+//	  });
+//	  updateAgent.maxSockets = 1;
+//	  updateAgent.foo = "bar"+i;
+//  }
+//  //end---------------
 
   // A simple wrapper around node's http(s) request.
   function request(method, path, body, callback) {
@@ -74,22 +78,21 @@ function CouchClient(url) {
     }
 
     var options = {
-//    	      host: uri.hostname+":"+uri.port,
-    	      host: uri.hostname,
+      host: uri.hostname,
       method: method,
       path: path,
       port: uri.port,
       headers: headers
     };
 
-    //start---------------
-    if(path.indexOf("_update") !== -1){
-    	options.agent = updateAgent;
-    }
-    else{
-    	options.agent = agent;    	
-    }
-    //end---------------
+//    //start---------------
+//    if(path.indexOf("_update") !== -1){
+//    	options.agent = updateAgents[(path.charCodeAt(path.length-1)%10)];
+//    }
+//    else{
+//    	options.agent = agent;    	
+//    }
+//    //end---------------
 
     var request = uri.protocolHandler.request(options, function (response) {
       response.setEncoding('utf8');
@@ -119,13 +122,6 @@ function CouchClient(url) {
     return stream;
   }
   
-//  function request(method, path, body, callback) {
-//	  return __request(agent, method, path, body, callback);
-//  };
-//  
-//  function update(method, path, body, callback) {
-//	  return __request(updateAgent, method, path, body, callback);
-//  };
 
   // Requests UUIDs from the couch server in tick batches
   var uuidQueue = [];
