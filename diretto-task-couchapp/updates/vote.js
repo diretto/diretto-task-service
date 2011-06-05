@@ -11,7 +11,7 @@ function(doc, req) {
 	
 	//Check for document
 	if(!doc || doc.type !== "task"){
-		return[null, "hello new"+req.uuid+"\n"];
+		return[null,{code: 404, body:'{"status":404,"error":"not found"}', headers : {"Content-Type":"application/json"} }];
 	}
 	
 	var body = {};
@@ -19,42 +19,15 @@ function(doc, req) {
 		body  = JSON.parse(req.body);
 	}
 	catch (e) {
-		return[null, "1 hello \n"];
+		return[null,{code: 400, body:'{"status":400,"error":"invalid request"}', headers : {"Content-Type":"application/json"} }];
 	}
 	
 	var v = vote.extractId(body, doc);	
 	if(v == null){
-		return [null, "not found"];
+		return[null,{code: 400, body:'{"status":400,"error":"invalid request"}', headers : {"Content-Type":"application/json"} }];
 	}
 	
 	vote.add(v, body.userId, (body.vote === 'up' ? "up" : "down"));
-	return[doc, "ok"];
-	
-	
-//	return[null, "2 "+JSON.stringify(body)+"\n"];
+	return[doc,{code: 201, body:'{"status":201,"content":{"message":"updated"}}', headers : {"Content-Type":"application/json"} }];
 
-//	if(!doc || doc.type !== "task"){
-//		return[null, "hello new"+req.uuid+"\n"];
-//	}
-//	else{
-////		try{
-//			var x = {};
-//				x = JSON.parse(req.body);
-//				return[null, JSON.stringify(x.foo)];
-////		}
-////		catch (e) {
-////			return[null, "catch"];
-////		}
-////		finally{
-////			return[null, "finally"];
-////		}
-////		
-//		 
-//		
-////		if(!doc.bla){
-////			doc.bla = [];
-////		}
-////		doc.bla.push(req.uuid);
-////		return[doc, {code: 303, body:"hello existing\n"+req.uuid+"\n",headers : { "X-Response-Code" : "303" } }];
-//	}
 };

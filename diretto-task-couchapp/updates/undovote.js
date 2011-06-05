@@ -11,7 +11,7 @@ function(doc, req) {
 	
 	//Check for document
 	if(!doc || doc.type !== "task"){
-		return[null, "hello new"+req.uuid+"\n"];
+		return[null,{code: 404, body:'{"status":404,"error":"not found"}', headers : {"Content-Type":"application/json"} }];
 	}
 	
 	var body = {};
@@ -19,14 +19,14 @@ function(doc, req) {
 		body  = JSON.parse(req.body);
 	}
 	catch (e) {
-		return[null, "1 hello \n"];
+		return[null,{code: 400, body:'{"status":400,"error":"invalid request"}', headers : {"Content-Type":"application/json"} }];
 	}
 	
 	var v = vote.extractId(body, doc);	
 	if(v == null){
-		return [null, "not found"];
+		return[null,{code: 400, body:'{"status":400,"error":"invalid request"}', headers : {"Content-Type":"application/json"} }];
 	}
 	
 	vote.remove(v, body.userId);
-	return[doc, "ok"];
+	return[doc,{code: 201, body:'{"status":201,"content":{"message":"updated"}}', headers : {"Content-Type":"application/json"} }];
 };
