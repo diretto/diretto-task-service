@@ -105,7 +105,7 @@ module.exports = function(h) {
 								document : data.document
 							};
 
-							h.util.updateHandler.retryable('POST', "/tasks/_design/tasks/_update/addsubmission/t-" + req.uriParams.taskId, submission, function(err, result) {
+							h.util.updateHandler.retryable("tasks/addsubmission", "t-" + req.uriParams.taskId, submission, function(err, result) {
 								if (err) {
 									if (err.error && err.error === 'duplicate') {
 										res.send(409, {

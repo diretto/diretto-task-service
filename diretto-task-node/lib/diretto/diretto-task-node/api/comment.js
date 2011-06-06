@@ -63,7 +63,16 @@ module.exports = function(h) {
 					data.votes = {up:[], down:[]};
 					
 					
-					h.util.updateHandler.retryable('POST', "/tasks/_design/tasks/_update/addcomment/t-"+req.uriParams.taskId, data, function(err,result){
+//					h.db.update("tasks/addcomment", h.CONSTANTS.TASK.PREFIX + "-"+req.uriParams.taskId, null, data, function(err,dbRes){
+//						console.log(err);
+//						console.log(dbRes);
+//					});
+//					
+//					res.send(201, null, {'Location': h.util.uri.comment(req.uriParams.taskId, data.id)});
+//					return next();
+					
+					
+					h.util.updateHandler.retryable("tasks/addcomment", "t-"+req.uriParams.taskId, data, function(err,result){
 						if(err){
 							if (err.error && err.error === 'duplicate') {
 								res.send(409, {

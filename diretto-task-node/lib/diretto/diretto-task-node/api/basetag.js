@@ -6,10 +6,10 @@ var crypto = require('crypto');
  * @author Benjamin Erb
  */
 module.exports = function(h) {
-	
+
 	var TAG_MIN_LENGTH = 2;
 	var TAG_MAX_LENGTH = 64;
-	
+
 	var validateBaseTag = function(data, response, next, callback) {
 		var failed = false;
 		var fail = function(msg) {
@@ -29,13 +29,13 @@ module.exports = function(h) {
 			fail("Attributes are missing.");
 			return;
 		}
-		
+
 		// Check tag
 		if (!(typeof (data.value) == 'string' && data.value.length >= TAG_MIN_LENGTH && data.value.length <= TAG_MAX_LENGTH)) {
 			fail("Invalid tag.");
 			return;
 		}
-		
+
 		if (!failed) {
 			callback({
 				"value" : data.value
@@ -44,22 +44,34 @@ module.exports = function(h) {
 	};
 
 	return {
-		
+
 		create : function(req, res, next) {
-			validateBaseTag(req.params, res, next, function(data){
+			validateBaseTag(req.params, res, next, function(data) {
 				var md5calc = crypto.createHash('md5');
 				md5calc.update(data.value);
 				var tagId = md5calc.digest('hex');
-				
-				var tagDocId = h.CONSTANTS.BASETAG.PREFIX + "-" +tagId;
-				
-				h.assertion.tagExists(tagDocId, h.db, function(exists){
-					if(exists){
-						res.send(202, null, {'Location': h.util.uri.tag(tagId)});
+
+				var tagDocId = h.CONSTANTS.BASETAG.PREFIX + "-" + tagId;
+
+				var resourceUri = h.util.uri.tag(tagId);
+				var successResponse = {
+					"baseTag" : {
+						"link" : {
+							"rel" : "self",
+							"href" : resourceUri
+						}
+					}
+				};
+
+				h.assertion.baseTagExists(tagDocId, h.db, function(exists) {
+					if (exists) {
+						res.send(202, successResponse, {
+							'Location' : resourceUri
+						});
 						next();
 						return;
 					}
-					else{
+					else {
 						var tagDoc = {};
 
 						tagDoc._id = tagDocId;
@@ -67,68 +79,58 @@ module.exports = function(h) {
 						tagDoc.creator = req.authenticatedUser;
 						tagDoc.type = h.CONSTANTS.BASETAG.TYPE;
 						tagDoc.value = data.value;
-						
-						h.db.save(tagDoc, function(err, doc){
-							console.log(doc);
-							if(err){
-								res.send(500, {
-									"error" : {
-										"reason" : "Internal server error. Please try again later."
-									}
-								}, {});
-								return next();
+
+						h.db.save(tagDocId, tagDoc, function(err, dbRes) {
+							if (err) {
+								if (err.error && err.error === 'conflict') {
+									res.send(202, successResponse, {
+										'Location' : resourceUri
+									});
+									return next();
+								}
+								else {
+									res.send(500, {
+										"error" : {
+											"reason" : "Internal server error. Please try again later."
+										}
+									}, {});
+									return next();
+								}
 							}
-							else{
-								var resourceUri = h.util.uri.tag(tagId);
-								res.send(201, {
-									   "baseTag":{
-										      "link":{
-										         "rel":"self",
-										         "href":resourceUri
-										      }
-										   }
-										}, {'Location': resourceUri});
+							else {
+								res.send(201, successResponse, {
+									'Location' : resourceUri
+								});
 								return next();
 							}
 						});
-						
 					}
 				});
 			});
-			
+
 		},
-		
-		get: function(req, res, next) {
-			h.db.view('/tasks/_design/tasks/_view/basetags', {key: req.uriParams.tagId}, function(err, doc) {
-				if(doc && doc.rows && doc.rows.length === 1){
-					res.send(200, doc.rows[0].value.content, {"Etag":doc.rows[0].value.etag});
+
+		get : function(req, res, next) {
+
+			h.db.view('tasks/basetags', {
+				key : req.uriParams.tagId
+			}, function(err, dbRes) {
+				if(dbRes && dbRes.length === 1){
+					res.send(200, dbRes[0].value.content, {
+						"Etag" : dbRes[0].value.etag
+					});
 					next();
 				}
-				else if(doc){
+				else if (dbRes) {
 					res.send(404, null, {});
 					next();
 				}
-				else{
+				else {
 					res.send(500, null, {});
 					next();
 				}
 			});
-
-//			h.db.get(h.CONSTANTS.BASETAG.PREFIX + "-" +req.uriParams.tagId, function(err, doc) {
-//				if (doc) {
-//					res.send(200, doc, {});
-//					next();
-//				}
-//				else if(err && err.reason === "not found" ){
-//					res.send(404, {error:{reason: "not found"}}, {});
-//					next();
-//				}
-//				else{
-//					res.send(500, null, {});
-//					next();
-//				}
-//			});
 		}
-		
+
 	};
 };

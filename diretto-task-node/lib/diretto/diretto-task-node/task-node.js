@@ -1,9 +1,10 @@
 var path = require('path');
 
-var CouchClient = require('couch-client');
 var uuid = require('node-uuid');
 var restify = require('node-restify');
 var log = restify.log;
+var cradle = require('cradle');
+
 
 log.level(restify.LogLevel.Debug);
 
@@ -34,8 +35,11 @@ module.exports = function(options) {
 		serverName : options.server.signature
 	});
 
-	// Create CouchClient
-	var db = CouchClient(options.task.persistence.couchdb.uri);
+	var db = new(cradle.Connection)(options.task.persistence.couchdb.host, options.task.persistence.couchdb.port, {
+	    cache: false,
+	    raw: false
+	}).database(options.task.persistence.couchdb.table);
+
 	
 	// API helper objects collects useful stuff and is passed to actual API
 	// methods
@@ -66,7 +70,7 @@ module.exports = function(options) {
 			assertion : {
 					documentExists : require('./assertions/document-exists.js'),
 					taskExists : require('./assertions/task-exists.js'),
-					tagExists : require('./assertions/basetag-exists.js'),
+					baseTagExists : require('./assertions/basetag-exists.js'),
 					submissionExists : require('./assertions/submission-exists.js'),
 			},
 							

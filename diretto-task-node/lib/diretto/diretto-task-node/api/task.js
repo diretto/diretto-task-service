@@ -95,6 +95,7 @@ module.exports = function(h) {
 
 			validateTask(req.params, res, next, function(data){
 				var taskId =h.uuid();
+				
 				data._id = h.CONSTANTS.TASK.PREFIX + "-" +taskId;
 				data.creationTime = new Date().toRFC3339UTCString();
 				data.creator = req.authenticatedUser;
@@ -104,8 +105,11 @@ module.exports = function(h) {
 				data.comments = {};
 				data.tags = {};
 				data.submissions = {};
-				h.db.save(data, function(err, doc){
-					if(err){
+				
+				var resourceUri = h.util.uri.task(taskId);
+				
+				h.db.save(data._id, data, function(err, dbRes) {
+					if (err) {
 						res.send(500, {
 							"error" : {
 								"reason" : "Internal server error. Please try again later."
@@ -113,11 +117,15 @@ module.exports = function(h) {
 						}, {});
 						return next();
 					}
-					else{
-						res.send(201, null, {'Location': h.util.uri.task(taskId)});
+					else {
+						res.send(201, null, {
+							'Location' : resourceUri
+						});
 						return next();
 					}
 				});
+				
+
 			});
 			
 		},

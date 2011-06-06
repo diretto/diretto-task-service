@@ -13,7 +13,9 @@
     },
 	"persistence" : {
 		"couchdb":{
-			"uri":"http://localhost:5984/tasks"
+			"host" : "localhost",
+			"port" : 5984,
+			"table" : "tasks"			
 		}
 	},
 	"external": {

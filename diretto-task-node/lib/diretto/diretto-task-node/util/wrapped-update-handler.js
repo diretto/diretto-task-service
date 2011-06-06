@@ -10,39 +10,22 @@ module.exports = function(db) {
 	};
 	
 	
-	//Wrapper that bugfixes https://issues.apache.org/jira/browse/COUCHDB-648 as well as missing response code from couch-client
+	//Wrapper that bugfixes https://issues.apache.org/jira/browse/COUCHDB-648 as well as missing response code from db client
 	//When response code is ok, but X-Response-Code is a valid header, or the document contains this value, emit error.
-	var request = function(method, uri, data, callback){
-		db.request(method, uri, data, function(err, result) {
+	var request = function(path, id, data, callback){
+		db.update(path, id, null, data, function(err,dbRes){
 			if(err){
 				callback(err);
 			}
-			else if(result.status && !(result.status === 200 || result.status === 201 || result.status === 202)){
-				var error = {"status" : result.status};
-				if(result.status === 409){
-					error.error = "duplicate";
-				}
-				else{
-					error.error = "error";
-				}
-				callback(error);
-			}
-			else if(result.error){
-				callback(result);
-			}
 			else{
-				callback(null, result);
+				callback(null, dbRes);
 			}
 		});
 	};
-
-	// h.db.request('POST',
-	// "/tasks/_design/tasks/_update/addcomment/t-"+req.uriParams.taskId, data,
-	// function(err,result){
-
-	var retryingUpdateHandler = function retryingUpdateHandler(method, uri, data, callback, attempts, factors, backoff) {
+	
+	var retryingUpdateHandler = function retryingUpdateHandler(path, id, data, callback, attempts, factors, backoff) {
 		if (attempts >= 1) {
-			request(method, uri, data, function(err, result) {
+			request(path, id, data, function(err, result) {
 				if (err) {
 					if(attempts <= 1){
 						callback(err);
@@ -52,7 +35,7 @@ module.exports = function(db) {
 							var nextBackoff = Math.floor(factors * backoff + (Math.random()*backoff));
 							console.log("RETRYING in "+nextBackoff);
 							setTimeout(function() {
-								retryingUpdateHandler(method, uri, data, callback, attempts - 1, factors, nextBackoff);
+								retryingUpdateHandler(path, id, data, callback, attempts - 1, factors, nextBackoff);
 							}, nextBackoff);
 						}
 						else {
@@ -72,8 +55,8 @@ module.exports = function(db) {
 	};
 
 	return {
-		retryable : function(method, uri, data, callback) {
-			return retryingUpdateHandler(method, uri, data, callback, 6, 1.1, 80);
+		retryable : function(path, id, data, callback) {
+			return retryingUpdateHandler(path, id, data, callback, 6, 1.1, 80);
 		}
 	}
 
