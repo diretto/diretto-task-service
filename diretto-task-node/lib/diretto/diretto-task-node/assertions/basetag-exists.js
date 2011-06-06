@@ -9,6 +9,6 @@ module.exports = function(tagDocId, db, callback) {
 		else {
 			callback(false);
 		}
-	})
+	});
 	
 };

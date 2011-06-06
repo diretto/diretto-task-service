@@ -1,17 +1,16 @@
 module.exports = function(options){
 	
 	var baseUri = options.task.external.uri;
-	// TODO fix screwed baseUri
-	
+		
 	var builder = function(p){
 		 if(p.taskId && p.submissionId && p.tagId){
-			 return baseUri+"/task/"+taskId+"/submission/"+submissionId+"/tag/"+tagId;
+			 return baseUri+"/task/"+p.taskId+"/submission/"+p.submissionId+"/tag/"+p.tagId;
 		}
 		else if(p.taskId && p.submissionId){
-			return baseUri+"/task/"+taskId+"/submission/"+submissionId;
+			return baseUri+"/task/"+p.taskId+"/submission/"+p.submissionId;
 		}
 		else if(p.taskId && p.tagId){
-			return baseUri+"/task/"+taskId+"/tag/"+tagId;
+			return baseUri+"/task/"+p.taskId+"/tag/"+p.tagId;
 		}
 		else if(p.taskId && p.commentId){
 			return  baseUri+"/task/"+p.taskId+"/comment/"+p.commentId;

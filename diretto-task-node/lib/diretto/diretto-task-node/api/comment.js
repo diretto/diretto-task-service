@@ -62,16 +62,6 @@ module.exports = function(h) {
 					data.creator = req.authenticatedUser;
 					data.votes = {up:[], down:[]};
 					
-					
-//					h.db.update("tasks/addcomment", h.CONSTANTS.TASK.PREFIX + "-"+req.uriParams.taskId, null, data, function(err,dbRes){
-//						console.log(err);
-//						console.log(dbRes);
-//					});
-//					
-//					res.send(201, null, {'Location': h.util.uri.comment(req.uriParams.taskId, data.id)});
-//					return next();
-					
-					
 					h.util.updateHandler.retryable("tasks/addcomment", "t-"+req.uriParams.taskId, data, function(err,result){
 						if(err){
 							if (err.error && err.error === 'duplicate') {
@@ -111,9 +101,75 @@ module.exports = function(h) {
 			});
 		},
 		
-		getAll : h.responses.notImplemented,
+		getAll : function(req, res, next) {
+			h.db.view('tasks/comments', {
+				startkey : [req.uriParams.taskId],
+				endkey  : [req.uriParams.taskId,{}]
+			}, function(err, dbRes) {
+				if(dbRes){
+					var list =  [];
+					var headers = {};
+					
+					var send = function(){
+						res.send(200, {
+							"comments" : {
+								"list" : list,
+								"link" : {
+									"rel" : "self",
+									"href" : h.util.uri.task(req.uriParams.taskId)
+								}							
+							} 
+						}, headers);
+						next();
+					};
+						
+					if(dbRes.length === 0){
+						h.db.head( "t-"+req.uriParams.taskId, function(err, headers,code) {
+							if(!code || code !== 200){
+								res.send(404, null, {});
+								return next();
+							}
+							else{
+								send();
+							}
+						});
+					}
+					else{
+						headers['Etag'] = dbRes[0].value.etag;
+						dbRes.forEach(function(viewItem){
+							list.push(viewItem.content);
+						});
+						send();
+					}
+				}
+				else {
+					res.send(500, null, {});
+					next();
+				}
+			});
+		},	
 		
-		get: h.responses.notImplemented
+		get: function(req, res, next) {
+			h.db.view('tasks/comments', {
+				key : [req.uriParams.taskId,req.uriParams.commentId]
+			}, function(err, dbRes) {
+				if(dbRes && dbRes.length === 1){
+					res.send(200, dbRes[0].value.content, {
+						"Etag" : dbRes[0].value.etag
+					});
+					next();
+				}
+				else if (dbRes) {
+					res.send(404, null, {});
+					next();
+				}
+				else {
+					res.send(500, null, {});
+					next();
+				}
+			});
+		}			
+			
 		
 	};
 };

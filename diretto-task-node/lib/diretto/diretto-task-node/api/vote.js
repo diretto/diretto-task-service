@@ -64,7 +64,7 @@ module.exports = function(h) {
 				return;
 			}
 						
-			h.util.updateHandler.retryable("tasks/vote" "t-"+req.uriParams.taskId, data, function(err,result){
+			h.util.updateHandler.retryable("tasks/vote", "t-"+req.uriParams.taskId, data, function(err,result){
 				if (err) {
 					if (err.error && err.error === 'not found') {
 						res.send(404, {
@@ -102,7 +102,7 @@ module.exports = function(h) {
 				return;
 			}
 			
-			h.util.updateHandler.retryable("tasks/undovote" "t-"+req.uriParams.taskId, data, function(err,result){
+			h.util.updateHandler.retryable("tasks/undovote", "t-"+req.uriParams.taskId, data, function(err,result){
 				if (err) {
 					if (err.error && err.error === 'not found') {
 						res.send(404, {

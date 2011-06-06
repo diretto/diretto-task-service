@@ -17,6 +17,8 @@ module.exports = function(options) {
 		version : "0.1.0",
 		signature : "diretto Task API Node/0.1.0"
 	}
+	
+	// TODO fix screwed baseUri options.task.external.uri
 
 	// Load auth plugin
 	var plugin = new PluginHandler();
@@ -37,7 +39,8 @@ module.exports = function(options) {
 
 	var db = new(cradle.Connection)(options.task.persistence.couchdb.host, options.task.persistence.couchdb.port, {
 	    cache: false,
-	    raw: false
+	    raw: false,
+	    poolsize: 64
 	}).database(options.task.persistence.couchdb.table);
 
 	
