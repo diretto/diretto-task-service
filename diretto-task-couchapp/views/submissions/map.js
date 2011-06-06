@@ -4,7 +4,18 @@
  * @author Benjamin Erb
  */
 function(doc) {
-  if (doc.type == "task") {
-    emit(doc,null);
-  }
+	
+	// !code vendor/diretto/view-formatter.js
+	
+	  if (doc.type === "task" && doc.visible === true) {
+		  if(doc.submissions){
+			  var ids = Object.keys(doc.submissions);
+			  for(var idx in ids){
+				  emit([doc._id.substr(2),ids[idx]],{
+					content : formatter.submission(doc.submissions[ids[idx]]),
+					etag : doc._rev
+				  });
+			  }
+		  }
+	  }
 };
