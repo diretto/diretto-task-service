@@ -63,7 +63,8 @@ module.exports = function(options) {
 			
 			util : {				
 				updateHandler : require('./util/wrapped-update-handler.js')(db),
-				uri : require('./util/uri-builder.js')(options)
+				uri : require('./util/uri-builder.js')(options),
+				identifyResource : require('./util/identify-resource.js')
 			},
 			
 			db : db,
@@ -214,13 +215,13 @@ module.exports = function(options) {
 	server.post('/v2/tags', [ authenticate ], api.basetag.create, [logging]);
 	server.get('/v2/tag/:tagId', [ authenticate ], api.basetag.get, [logging]);
 
-	server.post('/v2/task/:taskId/submission/:submissionId/tags', [ authenticate ], api.error.notImplemented, [logging]);
-	server.get('/v2/task/:taskId/submission/:submissionId/tags', [ authenticate ], api.error.notImplemented, [logging]);
-	server.get('/v2/task/:taskId/submission/:submissionId/tag/:tagId', [ authenticate ], api.error.notImplemented, [logging]);
+	server.post('/v2/task/:taskId/submission/:submissionId/tags', [ authenticate ], api.tag.append, [logging]);
+	server.get('/v2/task/:taskId/submission/:submissionId/tags', [ authenticate ], api.tag.getAll, [logging]);
+	server.get('/v2/task/:taskId/submission/:submissionId/tag/:tagId', [ authenticate ], api.tag.get, [logging]);
 
-	server.post('/v2/task/:taskId/tags', [ authenticate ], api.error.notImplemented, [logging]);
-	server.get('/v2/task/:taskId/tags', [ authenticate ], api.error.notImplemented, [logging]);
-	server.get('/v2/task/:taskId/tag/:tagId', [ authenticate ], api.error.notImplemented, [logging]);
+	server.post('/v2/task/:taskId/tags', [ authenticate ], api.tag.append, [logging]);
+	server.get('/v2/task/:taskId/tags', [ authenticate ], api.tag.getAll, [logging]);
+	server.get('/v2/task/:taskId/tag/:tagId', [ authenticate ], api.tag.get, [logging]);
 
 	// Vote
 	server.get('/v2/task/:taskId/comment/:commentId/votes', [ authenticate ], api.vote.getAll, [logging]);

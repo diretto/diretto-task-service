@@ -71,7 +71,8 @@ var formatter = (function(docId) {
 			},
 			"comments" : {
 				"link" : link(config.taskServiceBaseUri + "/task/" + docId.substr(2)+"/comments")
-			}
+			},
+			 
 		};
 	};
 	
@@ -80,7 +81,8 @@ var formatter = (function(docId) {
 	return {
 		comment : comment,
 		task 	: task,
-		submission : submission
+		submission : submission,
+		votes : votes
 	};
 	
 	

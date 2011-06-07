@@ -7,7 +7,11 @@ module.exports = function(h) {
 	
 	return {
 		
-		notImplemented : h.responses.notImplemented,
+		append  : h.responses.notImplemented,
+
+		get  : h.responses.notImplemented,
+		
+		getAll  : h.responses.notImplemented
 
 	};
 };
