@@ -184,6 +184,10 @@ module.exports = function(options) {
 		}
 	};
 
+	//Forward from root to index
+	server.get('/', [], function(req, res, next) {
+		res.send(303, null,{Location:options.task.external.uri});
+	}, [logging]);
 
 
 	// Index
