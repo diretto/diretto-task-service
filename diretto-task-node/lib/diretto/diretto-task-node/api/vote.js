@@ -177,7 +177,7 @@ module.exports = function(h) {
 					key : key
 				}, function(err, dbRes) {
 					if (dbRes && dbRes.length === 1) {
-						res.send(200, dbRes[0].value.content[type].votes, {
+						res.send(200, { votes : dbRes[0].value.content[type].votes}, {
 							"Etag" : dbRes[0].value.etag
 						});
 						next();
