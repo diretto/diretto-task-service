@@ -40,7 +40,7 @@ module.exports = function(options) {
 	var db = new(cradle.Connection)(options.task.persistence.couchdb.host, options.task.persistence.couchdb.port, {
 	    cache: false,
 	    raw: false,
-	    poolsize: 64
+	    poolsize: 32
 	}).database(options.task.persistence.couchdb.table);
 
 	

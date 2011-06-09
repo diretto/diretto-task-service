@@ -147,7 +147,9 @@ module.exports = function(h) {
 			var type;
 
 			if(p.taskId && p.submissionId && p.tagId){
-				//TODO:
+				view = "tasks/tags";
+				key = ["submission", p.taskId, p.submissionId, p.tagId];
+				type = "tag";
 			}
 			else if(p.taskId && p.submissionId){
 				view = "tasks/submissions";
@@ -155,7 +157,9 @@ module.exports = function(h) {
 				type = "submission";
 			}
 			else if(p.taskId && p.tagId){
-				//TODO:
+				view = "tasks/tags";
+				key = ["task", p.taskId, p.tagId];
+				type = "tag";
 			}
 			else if(p.taskId && p.commentId){
 				view = "tasks/comments";

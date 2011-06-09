@@ -36,7 +36,15 @@ var formatter = (function(docId) {
 	};	
 	
 	var submission = function(s) {
-		//TODO: tags...
+		var tags = [];
+		
+		if(s.tags){
+		  var tagIds = Object.keys(s.tags);
+		  for(var tidx in tagIds){
+			  tags.push(formatter.tag(s.tags[tagIds[tidx]], config.taskServiceBaseUri + "/task/" + docId.substr(2)+ "/submission/" + s.id));
+		  }
+		}
+		
 		return {
 			"submission" : {
 				"link" : link(config.taskServiceBaseUri + "/task/" + docId.substr(2) + "/submission/" + s.id),
@@ -45,6 +53,10 @@ var formatter = (function(docId) {
 				"votes" : votes(s.votes, config.taskServiceBaseUri + "/task/" + docId.substr(2) + "/submission/" + s.id),
 				"document" : {
 					"link": link(s.document.link.href)
+				},
+				"tags" : {
+					"link" : link(config.taskServiceBaseUri + "/task/" + docId.substr(2) + "/submission/" + s.id+"/tags"),
+					"list" : tags
 				}
 			}
 		};
@@ -52,8 +64,6 @@ var formatter = (function(docId) {
 	
 	var task = function(t){
 		return {
-			//TODO: tags...
-
 			"task" : {
 				"link" : link(config.taskServiceBaseUri + "/task/" + docId.substr(2)),
 				"constraints" : t.constraints,
@@ -71,18 +81,31 @@ var formatter = (function(docId) {
 			},
 			"comments" : {
 				"link" : link(config.taskServiceBaseUri + "/task/" + docId.substr(2)+"/comments")
-			},
-			 
+			}			 
 		};
 	};
 	
-	
+	var tag = function(t,taggedResUri){
+		return {
+			"tag" : {
+				"link" :	link(taggedResUri+"/tag/"+t.id),
+				"baseTag": {
+					"link": link(config.taskServiceBaseUri + "/tag/"+t.id),
+				},
+				value : t.value,
+				creationTime : t.creationTime,
+				creator: creator(t.creator),
+				votes :  votes(t.votes, taggedResUri+"/tag/"+t.id),
+			}
+		};
+	};
 
 	return {
 		comment : comment,
 		task 	: task,
 		submission : submission,
-		votes : votes
+		votes : votes,
+		tag : tag
 	};
 	
 	

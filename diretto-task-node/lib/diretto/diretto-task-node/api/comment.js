@@ -116,7 +116,7 @@ module.exports = function(h) {
 								"list" : list,
 								"link" : {
 									"rel" : "self",
-									"href" : h.util.uri.task(req.uriParams.taskId)
+									"href" : h.util.uri.task(req.uriParams.taskId)+"/comments"
 								}							
 							} 
 						}, headers);
