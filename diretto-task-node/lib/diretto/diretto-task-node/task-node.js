@@ -18,7 +18,7 @@ module.exports = function(options) {
 		signature : "diretto Task API Node/0.1.0"
 	}
 	
-	// TODO fix screwed baseUri options.task.external.uri
+	// TODO fix screwed baseUri options.task.external.uri => foobar/v2 !
 
 	// Load auth plugin
 	var plugin = new PluginHandler();

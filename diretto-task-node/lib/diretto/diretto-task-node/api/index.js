@@ -31,7 +31,7 @@ module.exports = function(h) {
 					"core" : {
 						"link" : {
 							"rel" : "self",
-							"href" : "http://coreservice/v2"
+							"href" : h.options.task.direttoMainServices.core.uri
 						}
 					}
 				}

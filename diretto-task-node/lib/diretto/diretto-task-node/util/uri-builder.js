@@ -49,7 +49,7 @@ module.exports = function(options){
 				submissionId: submission
 			});			
 		},
-		taggedTask : function(task, submission){
+		taggedTask : function(task, tag){
 			return builder({
 				taskId: task,
 				tagId: tag
@@ -57,7 +57,7 @@ module.exports = function(options){
 		},	
 		taggedSubmission : function(task, submission, tag){
 			return builder({
-				taskId: p.task,
+				taskId: task,
 				submissionId: submission,
 				tagId: tag
 			});			

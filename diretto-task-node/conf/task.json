@@ -19,7 +19,12 @@
 		}
 	},
 	"external": {
-		"uri" : "http://localhost:8006/"
+		"uri" : "http://taskservice/v2"
+	},
+	"direttoMainServices" : {
+		"core": {
+			"uri" : "http://api.diretto.org/v2"
+		}
 	}
     	 
 }

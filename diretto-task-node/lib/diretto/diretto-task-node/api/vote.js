@@ -1,5 +1,5 @@
 /**
- *
+ *	Vote Handler
  *
  * @author Benjamin Erb
  */
