@@ -7,6 +7,7 @@ var path = require('path');
 var querystring = require('querystring');
 var url = require('url');
 
+var formidable = require('formidable');
 var uuid = require('node-uuid');
 
 var Constants = require('./constants');
@@ -61,7 +62,11 @@ function _matches(path, route) {
   assert.ok(path);
   assert.ok(route);
 
-  if (path === route.url) return {}; // there were no params in this case...
+  if (path === route.url)
+    return {}; // there were no params in this case...
+
+  if (route.regexRoute)
+    return route.url.exec(path);
 
   var params = route.urlComponents;
   var components = path.split('/').splice(1);
@@ -85,77 +90,129 @@ function _matches(path, route) {
 
 
 function _parseAccept(request, response) {
-  response._accept = Constants.ContentTypeJson;
-  var tmpAccept = Constants.ContentTypeJson;
+  response._accept = 'application/json';
+  var accept = null;
 
   if (request.headers.accept && request.headers.accept !== '*/*') {
-    var _mediaRange = request.headers.accept.split(';');
-    if (!_mediaRange) {
-      response.sendError(newError({
-        httpCode: HttpCodes.BadRequest,
-        restCode: RestCodes.InvalidArgument,
-        message: 'Accept header invalid: ' + request.headers.accept
-      }));
-      return false;
-    }
-
-    var _acceptTypes = _mediaRange[0].split('/');
-    if (!_acceptTypes || _acceptTypes.length !== 2) {
-      response.sendError(newError({
-        httpCode: HttpCodes.BadRequest,
-        restCode: RestCodes.InvalidArgument,
-        message: 'Accept header invalid: ' + request.headers.accept
-      }));
-      return false;
-    }
-
-    if (_acceptTypes[0] !== '*') {
-      var type = request._config._acceptable[_acceptTypes[0]];
-      if (!type) {
-        if (log.trace())
-          log.trace('accept header type doesn\'t match application');
-
+    var mediaRanges = request.headers.accept.split(',');
+    for (var i = 0; i < mediaRanges.length; i++) {
+      var types = mediaRanges[i].split(';')[0].split('/'); // throw away params
+      if (!types || types.length !== 2) {
         response.sendError(newError({
-          httpCode: HttpCodes.NotAcceptable,
+          httpCode: HttpCodes.BadRequest,
           restCode: RestCodes.InvalidArgument,
-          message: request.headers.accept + ' unsupported',
-          details: request._config.acceptable
+          message: 'Accept header invalid: ' + request.headers.accept
         }));
         return false;
       }
-      tmpAccept = _acceptTypes[0] + '/';
-    }
 
-    if (_acceptTypes[1] !== '*') {
-      var subType;
-      var subTypes = request._config._acceptable[_acceptTypes[0]];
-      if (subTypes) {
-        for (var i = 0; i < subTypes.length; i++) {
-          if (subTypes[i] === _acceptTypes[1]) {
-            subType = subTypes[i];
+      if (types[0] !== '*') {
+        var subTypes = request._config._acceptable[types[0]];
+        if (!subTypes)
+          continue;
+        accept = types[0] + '/';
+
+        if (types[1] !== '*') {
+          var subType = null;
+          for (var j = 0; j < subTypes.length; j++) {
+            if (subTypes[j] === types[1]) {
+              subType = subTypes[i];
+              break;
+            }
+          }
+          if (subType) {
+            accept += subType;
             break;
           }
+        } else {
+          // This is not technically correct, but for all intents and purposes,
+          // it's good enough for now (but, for example text/* would be screwed
+          // with this).
+          accept = 'application/json';
+          break;
         }
+      } else {
+        accept = 'application/json';
+        break;
       }
-
-      if (!subType) {
-        response.sendError(newError({
-          httpCode: HttpCodes.NotAcceptable,
-          restCode: RestCodes.InvalidArgument,
-          message: request.headers.accept + ' unsupported',
-          details: request._config.acceptable
-        }));
-        return false;
-      }
-      tmpAccept += subType;
-    } else {
-      tmpAccept = Constants.ContentTypeJson;
+      accept = null;
     }
+
+    if (!accept) {
+      response.sendError(newError({
+        httpCode: HttpCodes.NotAcceptable,
+        restCode: RestCodes.InvalidArgument,
+        message: request.headers.accept + ' unsupported',
+        details: request._config.acceptable
+      }));
+      return false;
+    }
+
+    response._accept = accept;
   }
 
-  response._accept = tmpAccept;
+
   if (log.trace())
     log.trace('Parsed accept type as: %s', response._accept);
+
+  return true;
+}
+
+
+function _parseAuthorization(req, res) {
+  req.authorization = {};
+
+  if (!req.headers.authorization) {
+    log.trace('No authorization header present.');
+    return true;
+  }
+
+  var pieces =  req.headers.authorization.split(' ', 2);
+  if (!pieces || pieces.length !== 2) {
+    res.sendError(newError({
+      httpCode: HttpCodes.BadRequest,
+      restCode: RestCodes.InvalidHeader,
+      message: 'BasicAuth content is invalid.'
+    }));
+    return false;
+  }
+
+  req.authorization = {
+    scheme: pieces[0],
+    credentials: pieces[1]
+  };
+
+  if (pieces[0] === 'Basic') {
+    var decoded = (new Buffer(pieces[1], 'base64')).toString('utf8');
+    if (!decoded) {
+      res.sendError(newError({
+        httpCode: HttpCodes.BadRequest,
+        restCode: RestCodes.InvalidHeader,
+        message: 'Authorization: Basic content is invalid (not base64).'
+      }));
+      return false;
+    }
+
+    pieces = decoded !== null ? decoded.split(':', 2) : null;
+    if (!(pieces !== null ? pieces[0] : null) ||
+        !(pieces !== null ? pieces[1] : null)) {
+      res.sendError(newError({
+        httpCode: HttpCodes.BadRequest,
+        restCode: RestCodes.InvalidHeader,
+        message: 'Authorization: Basic content is invalid.'
+      }));
+      return false;
+    }
+
+    req.authorization.basic = {
+      username: pieces[0],
+      password: pieces[1]
+    };
+    req.username = pieces[0];
+  } else {
+    log.info('Unknown authorization scheme %s. Skipping processing',
+             req.authorization.scheme);
+  }
 
   return true;
 }
@@ -196,14 +253,6 @@ function _parseDate(request, response) {
 
 
 function _parseContentType(request, response) {
-  if (request.contentType() === 'multipart/form-data') {
-    response.sendError(newError({
-      httpCode: HttpCodes.UnsupportedMediaType,
-      restCode: RestCodes.InvalidArgument,
-      message: 'multipart/form-data unsupported'
-    }));
-    return false;
-  }
   return request.contentType();
 }
 
@@ -246,6 +295,7 @@ function _parseHead(request, response) {
   }
 
   if (!_parseAccept(request, response)) return false;
+  if (!_parseAuthorization(request, response)) return false;
   if (!_parseDate(request, response)) return false;
   if (!_parseApiVersion(request, response)) return false;
   if (!_parseQueryString(request, response)) return false;
@@ -260,74 +310,96 @@ function _parseRequest(request, response, next) {
   assert.ok(response);
   assert.ok(next);
 
-  request.body = '';
-  request.on('data', function(chunk) {
-    if (request.body.length + chunk.length > request._config.maxRequestSize) {
+  var contentType = request.contentType();
+  if (contentType === 'multipart/form-data') {
+    var form = formidable.IncomingForm();
+    form.maxFieldsSize = request._config.maxRequestSize;
+
+    form.on('error', function(err) {
       return response.sendError(newError({
-        httpCode: HttpCodes.RequestTooLarge,
-        restCode: RestCodes.RequestTooLarge,
-        message: 'maximum HTTP data size is 8k'
+        httpCode: HttpCodes.BadRequest,
+        restCode: RestCodes.BadRequest,
+        message: err.toString()
       }));
-    }
-    request.body += chunk;
-  });
+    });
 
-  request.on('end', function() {
-    if (request.body) {
-      var contentLen = request.headers['content-length'];
-      if (contentLen !== undefined) {
-        if (parseInt(contentLen, 10) !== request.body.length) {
-          return response.sendError(newError({
-            httpCode: HttpCodes.BadRequest,
-            restCode: RestCodes.InvalidHeader,
-            message: 'Content-Length=' + contentLen +
-              ' didn\'t match actual length=' + request.body.length
-          }));
-        }
-      }
+    form.on('field', function(field, value) {
+      log.trace('_parseRequest(multipart) field=%s, value=%s', field, value);
+      request.params[field] = value;
+    });
 
-      var contentType = request.contentType();
-      var bParams;
-      if (contentType === Constants.ContentTypeFormEncoded) {
-        bParams = querystring.parse(request.body) || {};
-      } else if (contentType === Constants.ContentTypeJson) {
-        try {
-          bParams = JSON.parse(request.body);
-        } catch (e) {
-          return response.sendError(newError({
-            httpCode: HttpCodes.BadRequest,
-            restCode: RestCodes.InvalidArgument,
-            message: 'Invalid JSON: ' + e.message
-          }));
-        }
-      } else if (contentType) {
+    form.on('end', function() {
+      log.trace('_parseRequset(multipart): req.params=%o', request.params);
+      return next();
+    });
+    form.parse(request);
+  } else {
+    request.body = '';
+    request.on('data', function(chunk) {
+      if (request.body.length + chunk.length > request._config.maxRequestSize) {
         return response.sendError(newError({
-          httpCode: HttpCodes.UnsupportedMediaType,
-          restCode: RestCodes.InvalidArgument,
-          message: contentType + ' unsupported'
+          httpCode: HttpCodes.RequestTooLarge,
+          restCode: RestCodes.RequestTooLarge,
+          message: 'maximum HTTP data size is 8k'
         }));
       }
+      request.body += chunk;
+    });
 
-      for (var k in bParams) {
-        if (bParams.hasOwnProperty(k)) {
-          if (request.params.hasOwnProperty(k)) {
+    request.on('end', function() {
+      if (request.body) {
+        log.trace('_parseRequest: req.body=%s', request.body);
+        var contentLen = request.headers['content-length'];
+        if (contentLen !== undefined) {
+          if (parseInt(contentLen, 10) !== request.body.length) {
             return response.sendError(newError({
-              httpCode: HttpCodes.Conflict,
-              restCode: RestCodes.InvalidArgument,
-              message: 'duplicate parameter detected: ' + k
+              httpCode: HttpCodes.BadRequest,
+              restCode: RestCodes.InvalidHeader,
+              message: 'Content-Length=' + contentLen +
+                ' didn\'t match actual length=' + request.body.length
             }));
           }
-          request.params[k] = bParams[k];
+        }
+
+        var bParams;
+        if (contentType === 'application/x-www-form-urlencoded') {
+          bParams = querystring.parse(request.body) || {};
+        } else if (contentType === 'application/json') {
+          try {
+            bParams = JSON.parse(request.body);
+          } catch (e) {
+            return response.sendError(newError({
+              httpCode: HttpCodes.BadRequest,
+              restCode: RestCodes.InvalidArgument,
+              message: 'Invalid JSON: ' + e.message
+            }));
+          }
+        } else if (contentType) {
+          return response.sendError(newError({
+            httpCode: HttpCodes.UnsupportedMediaType,
+            restCode: RestCodes.InvalidArgument,
+            message: contentType + ' unsupported'
+          }));
+        }
+
+        for (var k in bParams) {
+          if (bParams.hasOwnProperty(k)) {
+            if (request.params.hasOwnProperty(k)) {
+              return response.sendError(newError({
+                httpCode: HttpCodes.Conflict,
+                restCode: RestCodes.InvalidArgument,
+                message: 'duplicate parameter detected: ' + k
+              }));
+            }
+            request.params[k] = bParams[k];
+          }
         }
       }
-    }
 
-    if (log.trace())
       log.trace('_parseRequest: params parsed as: %o', request.params);
-
-    return next();
-  });
-
+      return next();
+    });
+  }
 }
 
 

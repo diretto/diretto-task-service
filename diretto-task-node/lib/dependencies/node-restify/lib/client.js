@@ -76,6 +76,7 @@ function RestClient(options) {
   this.path = options.path || '';
   if (!this.path &&
       this.url &&
+      this.url.pathname &&
       !(this.url.pathname === '/' &&
         options.url[options.url.length-1] !== '/')) {
     this.path = this.url.pathname;
@@ -309,14 +310,21 @@ RestClient.prototype._request = function(options, callback) {
       data = querystring.stringify(options.body);
     }
 
-    hash.update(data);
-    options.headers['content-type'] = this.contentType;
-    options.headers['content-length'] = data.length;
-    options.headers['content-md5'] = hash.digest('base64');
+    if (!data && typeof(options.body) !== 'object')
+      data = options.body + '';
+
+    if (data) {
+      hash.update(data);
+      options.headers['content-type'] = options.contentType;
+      options.headers['content-length'] = data.length;
+      options.headers['content-md5'] = hash.digest('base64');
+    } else {
+      options.headers['content-length'] = 0;
+    }
   }
 
   var operation = retry.operation(self.retryOptions);
-  operation.start(function(attempt) {
+  operation.attempt(function(attempt) {
     options.headers.Date = utils.newHttpDate(new Date());
     log.trace('RestClient(attempt=%d): issuing request %o', attempt, options);
     var req = self.proto.request(options, function(res) {
@@ -432,6 +440,7 @@ RestClient.prototype._newHttpOptions = function(method) {
 
   var self = this;
   var opts = {
+    contentType: self.contentType,
     headers: {},
     method: method,
     path: self.path.toString()

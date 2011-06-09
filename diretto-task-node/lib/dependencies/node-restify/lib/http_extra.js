@@ -24,10 +24,12 @@ http.IncomingMessage.prototype.contentType = function contentType() {
   var ndx;
 
   // RFC2616 section 7.2.1
-  if (!type) return 'application/octet-stream';
+  if (!type)
+    return 'application/octet-stream';
 
   ndx = type.indexOf(';');
-  if (ndx === -1) return type;
+  if (ndx === -1)
+    return type;
 
   return type.substring(0, ndx);
 };
@@ -106,11 +108,9 @@ http.ServerResponse.prototype.send = function(options) {
     if (_opts.code !== HttpCodes.NoContent) {
       headers['Content-Length'] = data.length;
       if (!_opts.noContentMD5) {
-    	  //-------------zipp
 //        var hash = crypto.createHash('md5');
 //        hash.update(data);
 //        headers['Content-MD5'] = hash.digest(encoding = 'base64');
-    	  //-------------zapp
       }
     } else {
       headers['Content-Length'] = 0;
@@ -208,9 +208,15 @@ http.Server.prototype._mount = function _mount(method, url, handlers, version) {
     method: method,
     url: url,
     handlers: _handlers,
-    urlComponents: url.split('/').slice(1),
-    version: version
+    version: version,
+    regexRoute: false
   };
+
+  if (url instanceof RegExp) {
+    r.regexRoute = true;
+  } else {
+    r.urlComponents = url.split('/').slice(1);
+  }
 
   this.routes[version][method].push(r);
   this.routes.urls[version][url].push(r);
@@ -226,7 +232,9 @@ http.Server.prototype.del = function() {
   var url = args[0];
   var version = this._config.defaultVersion;
 
-  if (!args[0] || typeof(args[0]) !== 'string')
+
+  if (!args[0] || (typeof(args[0]) !== 'string' &&
+                   !(args[0] instanceof RegExp)))
     throw new TypeError('argument 0 must be a string (version or url)');
 
   if (!args[1])
@@ -250,7 +258,8 @@ http.Server.prototype.get = function() {
   var url = args[0];
   var version = this._config.defaultVersion;
 
-  if (!args[0] || typeof(args[0]) !== 'string')
+  if (!args[0] || (typeof(args[0]) !== 'string' &&
+                   !(args[0] instanceof RegExp)))
     throw new TypeError('argument 0 must be a string (version or url)');
 
   if (!args[1])
@@ -274,7 +283,8 @@ http.Server.prototype.head = function() {
   var url = args[0];
   var version = this._config.defaultVersion;
 
-  if (!args[0] || typeof(args[0]) !== 'string')
+  if (!args[0] || (typeof(args[0]) !== 'string' &&
+                   !(args[0] instanceof RegExp)))
     throw new TypeError('argument 0 must be a string (version or url)');
 
   if (!args[1])
@@ -298,7 +308,8 @@ http.Server.prototype.post = function() {
   var url = args[0];
   var version = this._config.defaultVersion;
 
-  if (!args[0] || typeof(args[0]) !== 'string')
+  if (!args[0] || (typeof(args[0]) !== 'string' &&
+                   !(args[0] instanceof RegExp)))
     throw new TypeError('argument 0 must be a string (version or url)');
 
   if (!args[1])
@@ -322,7 +333,8 @@ http.Server.prototype.put = function() {
   var url = args[0];
   var version = this._config.defaultVersion;
 
-  if (!args[0] || typeof(args[0]) !== 'string')
+  if (!args[0] || (typeof(args[0]) !== 'string' &&
+                   !(args[0] instanceof RegExp)))
     throw new TypeError('argument 0 must be a string (version or url)');
 
   if (!args[1])
