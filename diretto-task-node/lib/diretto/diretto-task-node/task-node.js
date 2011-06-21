@@ -53,6 +53,10 @@ module.exports = function(options) {
 					TYPE : 'task',
 					PREFIX : 't'
 				},
+				QUERY : {
+					TYPE : 'query',
+					PREFIX : 'q'
+				},
 				BASETAG : {
 					TYPE : 'basetag',
 					PREFIX : 'b'

@@ -124,6 +124,9 @@ module.exports = function(h) {
 				}
 				console.log(entries[taskUri]);
 			});
+			
+			//TODO: check for max snapshots allowed
+			
 			if (!failed) {
 				callback(entries);
 			}
