@@ -151,7 +151,7 @@ module.exports = function(h) {
 			}, function(err, dbRes) {
 				if(dbRes && dbRes.length === 1){
 					res.send(200, dbRes[0].value.content, {
-						"Etag" : dbRes[0].value.etag
+						"Etag" : "\""+dbRes[0].value.etag+"\""
 					});
 					next();
 				}
@@ -200,7 +200,7 @@ module.exports = function(h) {
 						});
 					}
 					else{
-						headers['Etag'] = dbRes[0].value.etag;
+						headers['Etag'] = "\""+dbRes[0].value.etag+"\"";
 						dbRes.forEach(function(viewItem){
 							list.push(viewItem.content);
 						});
