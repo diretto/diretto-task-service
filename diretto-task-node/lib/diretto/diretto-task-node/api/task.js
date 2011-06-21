@@ -194,8 +194,33 @@ module.exports = function(h) {
 					}
 				});
 
-				// todo fetch tags
-				b.submit();
+//				// todo fetch tags
+//				b.submit();
+				
+				// Fetch tags
+				h.db.view('tasks/tags', {
+					startkey : [ "task",taskId ],
+					endkey : [ "task",taskId, {} ]
+				}, function(err, dbRes) {
+					if (dbRes) {
+						var list = [];
+						if (dbRes.length > 0) {
+							dbRes.forEach(function(viewItem) {
+								list.push(viewItem.content);
+							});
+						}
+						result.tags.list = list;
+						b.submit();
+					}
+					else {
+						b.abort(function() {
+							callback({
+								"error" : "not found",
+								"status" : 500
+							});
+						});
+					}
+				});
 
 			}
 			else if (dbRes) {
