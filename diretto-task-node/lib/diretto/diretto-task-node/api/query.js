@@ -100,6 +100,9 @@ module.exports = function(h) {
 		var lat2 = data.query.location.bbox[3]; 
 		var sort = data.query.sort || "upvotes<int>";
 		
+		console.log("start:"+start);
+		console.log("end:"+end);
+		
 		// Spatial constraints
 		var q = "(" +
 					"(lat1<double>:["+lat1+" TO "+lat2+"] OR lat2<double>:["+lat1+" TO "+lat2+"] OR ((lat1<double>:[-90 TO "+lat1+"]) AND (lat2<double>:["+lat2+" TO 90]))) " +
@@ -109,7 +112,7 @@ module.exports = function(h) {
 
 		// temporal
 		q = q + " AND (" +
-					"(start<long>:["+start+" TO "+end+"] OR lat2<long>:["+start+" TO "+end+"] OR ((lat1<long>:[0 TO "+start+"]) AND (lat2<long>:["+end+" TO 2918834151765]))) " +
+					"(start<long>:["+start+" TO "+end+"] OR end<long>:["+start+" TO "+end+"] OR ((start<long>:[0 TO "+start+"]) AND (end<long>:["+end+" TO 2918834151765]))) " +
 				")";
 		
 		// Tags
@@ -117,6 +120,11 @@ module.exports = function(h) {
 			q = q + " AND tags:(" +
 						data.query.tags.join(" AND ") +
 					")";
+		}
+		
+		//Filter
+		if(data.filter){
+			q = q +" AND ("+data.filter+")"
 		}
 
 		data.querystring = "q="+qstring.escape(q)+"&sort="+qstring.escape(sort); 
@@ -171,55 +179,139 @@ module.exports = function(h) {
 		});
 	};
 	
-	return {
+	var storeQueryResult = function(data, res, next){
 		
-		create : function(req, res, next) {			
-			validateCustomQuery(req.params, res, next, function(data){
-				buildQuery(data, function(data){
+		buildQuery(data, function(data){
+			
+			var id = h.CONSTANTS.QUERY.PREFIX + "-" + data.hash;
+		
+			//TODO: check if in cache
+			h.db.head( id, function(err, headers,code) {
+				if(!code || code !== 200){
+					//not yet in database
 					
-					var qDocId = h.CONSTANTS.QUERY.PREFIX + "-" + data.hash;
+					data._id = id;
+					data.creationTime =  new Date().toRFC3339UTCString();
+					data.type = h.CONSTANTS.QUERY.TYPE;
 					
-					//TODO: check if in cache
-					
-					h.db.head( qDocId, function(err, headers,code) {
-						if(!code || code !== 200){
-							//not yet in database
-							
-							data._id = qDocId;
-							data.creationTime =  new Date().toRFC3339UTCString();
-							data.type = h.CONSTANTS.QUERY.TYPE;
-							
-							h.db.save(data._id, data, function(err, dbRes) {
-								if (err) {
-									res.send(500, {
-										"error" : {
-											"reason" : "Internal server error. Please try again later."
-										}
-									}, {});
-									return next();
+					h.db.save(data._id, data, function(err, dbRes) {
+						if (err) {
+							res.send(500, {
+								"error" : {
+									"reason" : "Internal server error. Please try again later."
 								}
-								else {
-									//TODO: put in cache
-									res.send(202, null, {
-										Location: h.util.uri.query(data.hash)
-									});
-									return next();
-								}
-							});
+							}, {});
+							return next();
 						}
-						else{
-							//query exists
+						else {
+							//TODO: put in cache
 							res.send(202, null, {
 								Location: h.util.uri.query(data.hash)
 							});
 							return next();
 						}
-					});			
-				});
+					});
+				}
+				else{
+					//query exists
+					res.send(202, null, {
+						Location: h.util.uri.query(data.hash)
+					});
+					return next();
+				}
+			});	
+		});
+	};
+	
+	return {
+		
+		create : function(req, res, next) {			
+			validateCustomQuery(req.params, res, next, function(data){
+				storeQueryResult(data, res,next);
 			});
 		},
 		
-		common : h.responses.notImplemented,
+		common : function(req, res, next) {
+			var type = req.uriParams.type;
+			
+			var lat1, lat2, lon1,lon2;
+			
+			if(req.params.lat){
+				lat1 = req.params.lat;
+				lat2 = req.params.lat;
+			}
+			else if(req.params.lat1 && req.params.lat2){
+				lat1 = req.params.lat1;
+				lat2 = req.params.lat2;
+			}
+			else{
+				res.send(400, null, {});
+				next();
+				return;				
+			}
+			
+			if(req.params.lon){
+				lon1 = req.params.lon;
+				lon2 = req.params.lon;
+			}
+			else if(req.params.lon1 && req.params.lon2){
+				lon1 = req.params.lon1;
+				lon2 = req.params.lon2;
+			}
+			else{
+				res.send(400, null, {});
+				next();
+				return;				
+			}
+			
+			lat1 = parseInt(lat1); 
+			lat2 = parseInt(lat2); 
+			lon1 = parseInt(lon1); 
+			lon2 = parseInt(lon2); 
+			
+			var startTime = new Date();
+			startTime.setSeconds(0);
+			startTime.setMilliseconds(0);
+			startTime.setMinutes(0);
+			
+//			var startTime = new Date(d.getFullYear(), d.getMonth(), d.getDay(), d.getHours(), 0, 0, 0);
+			var endTime = new Date(startTime.getTime() + 1000 * 60* 60 );
+
+			var data = {
+					query : {
+						location : {
+							bbox: [lon1,lat1,lon2,lat2]
+						},
+						time : {
+							start : startTime.toRFC3339UTCString(),
+							end: endTime.toRFC3339UTCString()
+						}
+					}
+			};
+			
+			if(type === "newest"){
+				data.query.sort = "\\creationTime<long>";
+			}
+			else if(type === "unattended"){
+				data.query.sort = "submissions<int>";		
+				data.filter = "submissions<int>:0";
+			}
+			else if(type === "expiring"){
+				data.query.sort = "end<long>";				
+			}
+			else if(type === "popular"){
+				data.query.sort = "\\upvotes<int>";				
+			}
+			else{
+				res.send(404, null, {});
+				next();
+				return;
+			}
+			
+			storeQueryResult(data, res,next);
+			
+			
+		},
 		
 		forward: function(req, res, next) {
 			fetchQueryString(req.uriParams.queryId, function(err, querystring){

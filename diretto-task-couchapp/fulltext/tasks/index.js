@@ -40,6 +40,9 @@ function (doc) {
 		
 		ret.add(parseRFC3339(doc.creationTime).getTime(), {"field":"creationTime","type":"long", "store": store});
 		
+		log.info(parseRFC3339(doc.constraints.time.start).getTime());
+		log.info(parseRFC3339(doc.constraints.time.end).getTime());
+		
 		ret.add(parseRFC3339(doc.constraints.time.start).getTime(), {"field":"start","type":"long", "store": store});
 		
 		ret.add(parseRFC3339(doc.constraints.time.end).getTime(), {"field":"end","type":"long", "store": store});
