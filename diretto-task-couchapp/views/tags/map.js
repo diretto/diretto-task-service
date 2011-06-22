@@ -1,7 +1,6 @@
 /**
- * Provides a list of all votable resources with the voting results.
+ * Provides a list of all tags
  * 
- * [(res id), (up|down), (user-id)]
  * 
  * @author Benjamin Erb
  */

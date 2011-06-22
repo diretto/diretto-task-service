@@ -20,7 +20,7 @@
  *    (start<long>:[1246302951765 TO 1309374951765] OR end<long>:[1246302951765 TO 1309374951765] OR ((start<long>:[0 TO 1246302951765]) AND (end<long>:[1309374951765 TO 2918834151765]))) 
  *   
  *    
- * q=tags:(d456c1f6fa85ed2f6a26b15139c6ddc2 AND asd)	AND((lat1<double>:[0 TO 45] OR lat2<double>:[0 TO 45] OR ((lat1<double>:[-90 TO 0]) AND (lat2<double>:[45 TO 90]))) AND (lon1<double>:[0 TO 120] OR lon2<double>:[0 TO 120] OR ((lon1<double>:[-180 TO 0]) AND (lon2<double>:[120 TO 180]))) )
+ * q=tags:(d456c1f6fa85ed2f6a26b15139c6ddc2 AND asd)	AND((lat1<double>:[0 TO 45] OR lat2<double>:[0 TO 45] OR ((lat1<double>:[-90 TO 0]) AND (lat2<double>:[45 TO 90]))) AND (lon1<double>:[0 TO 120] OR lon2<double>:[0 TO 120] OR ((lon1<double>:[-180 TO 0]) AND (lon2<double>:[120 TO 180]))) ) AND (start<long>:[1246302951765 TO 1309374951765] OR end<long>:[1246302951765 TO 1309374951765] OR ((start<long>:[0 TO 1246302951765]) AND (end<long>:[1309374951765 TO 2918834151765])))
  * 
  * 
  */
@@ -75,8 +75,7 @@ function (doc) {
 		if(doc.votes){
 			ret.add(doc.votes.up.length,{"field":"upvotes","type":"int", "store": store});	
 		}
-		
-		
+			
 		
 		return ret; 
 	}
