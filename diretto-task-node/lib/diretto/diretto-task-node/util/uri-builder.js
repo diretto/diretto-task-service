@@ -21,7 +21,12 @@ module.exports = function(options){
 		else if(p.tagId){
 			return  baseUri+"/tag/"+p.tagId;
 		}
-		else{
+		else if(p.queryId && p.page){
+			return  baseUri+"/query/stored/"+p.queryId+"/cursor/"+p.page;
+		}
+		else if(p.queryId){
+			return  baseUri+"/query/stored/"+p.queryId;
+		}		else{
 			return baseUri;
 		}
 	};
@@ -61,6 +66,17 @@ module.exports = function(options){
 				submissionId: submission,
 				tagId: tag
 			});			
-		},				
+		},	
+		query : function(query){
+			return builder({
+				queryId: query
+			});			
+		},			
+		queryPage : function(query, page){
+			return builder({
+				queryId: query,
+				page : page
+			});			
+		},			
 	}
 };
