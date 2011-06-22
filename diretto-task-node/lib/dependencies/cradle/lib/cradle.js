@@ -123,6 +123,7 @@ cradle.Connection.prototype.rawRequest = function (method, path, options, data, 
                 options[k] = String(options[k]);
             }
         }
+        
         path += '?' + querystring.stringify(options);
     }
 
@@ -501,7 +502,20 @@ cradle.Connection.prototype.database = function (name) {
             }
 
             this.query('GET', ['_design', path[0], '_spatial', path[1]].join('/'), options, args.callback);
-        },         
+        },        
+        
+        fti : function (path, options) {
+            var args = new(Args)(arguments);
+            path = path.split('/');
+
+            //that sucks, must convert it back!
+            if(typeof(options) === "string"){
+            	options = querystring.parse(options);
+            	options['debug'] = "true";
+            }
+            
+        	this.query('GET', ['_fti', '_design', path[0], path[1]].map(querystring.escape).join('/'), options, args.callback);
+        },
 
         // Query a list, passing any options to the query string.
         // Some query string parameters' values have to be JSON-encoded.
@@ -520,10 +534,6 @@ cradle.Connection.prototype.database = function (name) {
         update: function(path, id, options, data) {
             var args = new(Args)(arguments);
             path = path.split('/');
-
-
-//            this.query('POST', ['_design', path[0], '_update', path[1], id].map(querystring.escape).join('/'), options, data, args.callback);
-
             if (id) {
               this.query('PUT', ['_design', path[0], '_update', path[1], id].map(querystring.escape).join('/'), options, data, args.callback);
             } else {
