@@ -12,6 +12,8 @@ module.exports = function(h) {
 	var TITLE_MAX_LENGTH = 250;
 	var DESCRIPTION_MIN_LENGTH = 0;
 	var DESCRIPTION_MAX_LENGTH = 4000;
+	
+	var SNAPSHOT_LIMIT_PER_QUERY = 100;
 
 	var validateTask = function(data, response, next, callback) {
 		var failed = false;
@@ -109,7 +111,11 @@ module.exports = function(h) {
 			fail("Task list is missing.");
 			return;
 		}
+		
 		else {
+			
+			var count = 0; 
+			
 			var entries = {};
 			data.tasks.forEach(function(taskUri) {
 				// TODO: parse URI
@@ -118,6 +124,7 @@ module.exports = function(h) {
 				console.log(taskUri.substring(0, h.options.task.external.uri.length));
 				if(taskUri.substring(0, h.options.task.external.uri.length) === h.options.task.external.uri){
 					entries[taskUri] = taskUri.substr((h.options.task.external.uri+"/task/").length).split("/")[0];
+					count++;
 				}
 				else{
 					entries[taskUri] = null;	
@@ -125,7 +132,11 @@ module.exports = function(h) {
 				console.log(entries[taskUri]);
 			});
 			
-			//TODO: check for max snapshots allowed
+			//check for max snapshots allowed
+			if(count > SNAPSHOT_LIMIT_PER_QUERY){
+				fail("Task list is missing.");
+				return;
+			}		
 			
 			if (!failed) {
 				callback(entries);
@@ -241,6 +252,7 @@ module.exports = function(h) {
 		});
 	};
 
+	//TODO: make generic (use function param)
 	var buildMultipleSnapshots = function(taskIds, callback) {
 		var results = {};
 		
@@ -299,6 +311,30 @@ module.exports = function(h) {
 			}
 		}
 	};
+	
+	var buildMetaData = function(taskId, callback){
+		//TODO: test
+		h.db.view('tasks/tasks', {
+			key : req.uriParams.taskId
+		}, function(err, dbRes) {
+			if (dbRes && dbRes.length === 1) {
+				
+				callback(null, dbRes[0].value.content,dbRes[0].value.etag);
+			}
+			else if (dbRes) {
+				callback({
+					"error" : "not found",
+					"status" : 404
+				});
+			}
+			else {
+				callback({
+					"error" : "not found",
+					"status" : 500
+				});
+			}
+		});
+	};
 
 	return {
 
@@ -344,6 +380,21 @@ module.exports = function(h) {
 		},
 
 		get : function(req, res, next) {
+			buildMetaData(req.uriParams.taskId, function(err, result, etag){
+				if (err) {
+					res.send(err.status || 500, null, {});
+					next();
+				}
+				else {
+					res.send(200, result, {
+						"Etag" : "\""+etag+"\""
+					});
+					next();
+				}
+			});
+			
+			//TODO: delete
+/*
 			h.db.view('tasks/tasks', {
 				key : req.uriParams.taskId
 			}, function(err, dbRes) {
@@ -362,6 +413,7 @@ module.exports = function(h) {
 					next();
 				}
 			});
+*/			
 		},
 
 		getSnapshot : function(req, res, next) {
@@ -393,6 +445,12 @@ module.exports = function(h) {
 						next();
 					}
 				});
+			});
+		},
+		
+		fetchMetadatas : function(req, res, next) {
+			validateSnapshotRequestList(req.params, res, next, function(data) {
+				//TODO:
 			});
 		}
 

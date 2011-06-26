@@ -208,6 +208,7 @@ module.exports = function(options) {
 	server.get('/v2/task/:taskId/snapshot', [ authenticate ], api.task.getSnapshot, [logging]);
 	server.post('/v2/tasks', [ authenticate ], api.task.create, [logging]);
 	server.post('/v2/tasks/snapshots', [], api.task.fetchSnapshots, [logging]);
+	server.post('/v2/tasks/metadata', [], api.task.fetchMetadatas, [logging]);
 
 	// Submission
 	server.post('/v2/task/:taskId/submissions', [ authenticate ], api.submission.create, [logging]);
