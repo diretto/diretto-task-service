@@ -252,8 +252,31 @@ module.exports = function(h) {
 		});
 	};
 
-	//TODO: make generic (use function param)
-	var buildMultipleSnapshots = function(taskIds, callback) {
+	var buildMetaData = function(taskId, callback){
+		h.db.view('tasks/tasks', {
+			key : taskId
+		}, function(err, dbRes) {
+			if (dbRes && dbRes.length === 1) {
+				
+				callback(null, dbRes[0].value.content,dbRes[0].value.etag);
+			}
+			else if (dbRes) {
+				callback({
+					"error" : "not found",
+					"status" : 404
+				});
+			}
+			else {
+				callback({
+					"error" : "not found",
+					"status" : 500
+				});
+			}
+		});
+	};
+	
+	
+	var buildMultiple = function(taskIds, fetchFunction, callback) {
 		var results = {};
 		
 		console.dir(taskIds);
@@ -287,7 +310,7 @@ module.exports = function(h) {
 			var b = barrierpoints(i, successCallback);
 	
 			var fetchTask = function(uri, id) {
-				buildSnapshot(id, function(err, result) {
+				fetchFunction(id, function(err, result) {
 					if (err) {
 						results[id] = {
 								"error" : {
@@ -310,30 +333,6 @@ module.exports = function(h) {
 				}
 			}
 		}
-	};
-	
-	var buildMetaData = function(taskId, callback){
-		//TODO: test
-		h.db.view('tasks/tasks', {
-			key : req.uriParams.taskId
-		}, function(err, dbRes) {
-			if (dbRes && dbRes.length === 1) {
-				
-				callback(null, dbRes[0].value.content,dbRes[0].value.etag);
-			}
-			else if (dbRes) {
-				callback({
-					"error" : "not found",
-					"status" : 404
-				});
-			}
-			else {
-				callback({
-					"error" : "not found",
-					"status" : 500
-				});
-			}
-		});
 	};
 
 	return {
@@ -392,28 +391,6 @@ module.exports = function(h) {
 					next();
 				}
 			});
-			
-			//TODO: delete
-/*
-			h.db.view('tasks/tasks', {
-				key : req.uriParams.taskId
-			}, function(err, dbRes) {
-				if (dbRes && dbRes.length === 1) {
-					res.send(200, dbRes[0].value.content, {
-						"Etag" : "\""+dbRes[0].value.etag+"\""
-					});
-					next();
-				}
-				else if (dbRes) {
-					res.send(404, null, {});
-					next();
-				}
-				else {
-					res.send(500, null, {});
-					next();
-				}
-			});
-*/			
 		},
 
 		getSnapshot : function(req, res, next) {
@@ -433,7 +410,7 @@ module.exports = function(h) {
 
 		fetchSnapshots : function(req, res, next) {
 			validateSnapshotRequestList(req.params, res, next, function(data) {
-				buildMultipleSnapshots(data, function(err, results) {
+				buildMultiple(data, buildSnapshot, function(err, results) {
 					if (err) {
 						res.send(err.status || 500, null, {});
 						next();
@@ -450,7 +427,18 @@ module.exports = function(h) {
 		
 		fetchMetadatas : function(req, res, next) {
 			validateSnapshotRequestList(req.params, res, next, function(data) {
-				//TODO:
+				buildMultiple(data, buildMetaData, function(err, results) {
+					if (err) {
+						res.send(err.status || 500, null, {});
+						next();
+					}
+					else {
+						res.send(200, {
+							"results" : results
+						}, {});
+						next();
+					}
+				});
 			});
 		}
 
