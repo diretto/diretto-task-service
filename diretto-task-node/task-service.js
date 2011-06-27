@@ -1,7 +1,8 @@
 /**
  * diretto Task Service Node
  * 
- * (c) Benjamin Erb; Tobias Schlecht
+ * @author Benjamin Erb
+ * 
  */
 
 var path = require('path');

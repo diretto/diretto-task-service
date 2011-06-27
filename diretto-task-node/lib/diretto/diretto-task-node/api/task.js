@@ -207,9 +207,6 @@ module.exports = function(h) {
 						});
 					}
 				});
-
-//				// todo fetch tags
-//				b.submit();
 				
 				// Fetch tags
 				h.db.view('tasks/tags', {
