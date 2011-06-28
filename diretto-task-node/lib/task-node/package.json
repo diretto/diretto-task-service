@@ -1,5 +1,5 @@
 {
-  "name"          : "diretto-task-node",
+  "name"          : "task-node",
   "description"   : "A node.js/CouchDB based diretto Task API service implementation",
   "url"           : "http://www.diretto.org",
   "keywords"      : ["diretto"],
