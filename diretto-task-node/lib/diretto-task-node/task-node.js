@@ -23,7 +23,7 @@ module.exports = function(options) {
 	// Load auth plugin
 	var plugin = new PluginHandler();
 	var auth = null;
-	var auths = plugin.preloadAllPluginsSync(path.join(__dirname, '..', '..', '..', 'plugins', 'common', 'auth'), true);
+	var auths = plugin.preloadAllPluginsSync(path.join(__dirname,  '..', '..', 'plugins', 'common', 'auth'), true);
 	if (auths[options.task.auth.plugin]) {
 		auth = auths[options.task.auth.plugin]();
 	}
