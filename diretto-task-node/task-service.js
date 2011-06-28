@@ -7,8 +7,8 @@
 
 var path = require('path');
 
-require.paths.push(path.join(__dirname, 'lib', 'dependencies'));
-require.paths.push(path.join(__dirname, 'lib', 'diretto'));
+require.paths.push(path.join(__dirname, 'lib'));
+require.paths.push(path.join(__dirname, 'vendor'));
 
 
 var direttoUtil = require('diretto-util');
