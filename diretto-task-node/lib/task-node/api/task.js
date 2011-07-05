@@ -14,6 +14,8 @@ module.exports = function(h) {
 	var DESCRIPTION_MAX_LENGTH = 4000;
 	
 	var SNAPSHOT_LIMIT_PER_QUERY = 100;
+	
+	var PAGINATION_SIZE = 20;
 
 	var validateTask = function(data, response, next, callback) {
 		var failed = false;
@@ -331,6 +333,7 @@ module.exports = function(h) {
 			}
 		}
 	};
+	
 
 	return {
 
@@ -437,7 +440,137 @@ module.exports = function(h) {
 					}
 				});
 			});
-		}
+		},
+		
+		getAllTasks : function(req, res, next){
+			h.db.view('tasks/tasksbydate', {
+				limit : 1
+			}, function(err,dbRes){
+				if(err){
+					res.send(500);
+				}
+				else{
+					if (dbRes.rows.length === 0) {
+						res.send(204);
+					}
+					else {
+						res.send(303, null,{
+							'Location' : h.util.uri.taskPage(dbRes.rows[0].key[1])
+						});
+					}
+				}
+			});
+		},
 
+		getTasksSince : function(req, res, next){
+			console.log(Date.parseRFC3339(req.uriParams.date));
+			if(Date.parseRFC3339(req.uriParams.date) === undefined){
+				res.send(400, {
+					   "error":{
+						      "reason":"Invalid date."
+						   }
+						},{});
+			}
+			else{
+				h.db.view('tasks/tasksbydate', {
+					limit : 1,
+					startkey : [req.uriParams.date]
+				}, function(err,dbRes){
+					if(err){
+						res.send(500);
+					}
+					else{
+						if (dbRes.rows.length === 0) {
+							res.send(204);
+						}
+						else {
+							res.send(303, null, {
+								'Location' :  h.util.uri.taskPage(dbRes.rows[0].key[1])
+							});
+						}
+					}
+				});
+			}
+		},
+
+		getTaskPage : function(req, res, next){
+			
+			//Get task
+			h.db.view('tasks/tasks', {
+				key : req.uriParams.taskId
+			}, function(err, dbRes) {
+				if (dbRes && dbRes.length === 1) {
+					
+					var key = [dbRes[0].value.content.task.creationTime, req.uriParams.taskId];
+					
+					h.util.viewPaginator.getPage('tasks/tasksbydate', key, PAGINATION_SIZE, false, function(row){
+						return row.key[1];
+					}, function(err, result){
+						if(err){
+							res.send(500);
+						}
+						else{
+							
+							var createLink = function(uri, rel){
+								if(rel === undefined || rel === null){
+									rel = "self"
+								}
+								return {
+									"rel" : rel,
+									"href" : uri
+								}
+							};							
+							
+							var createTaskList = function(taskId){
+								return {
+									"task" : {
+										"link" : createLink(h.util.uri.task(taskId))
+									} 
+								};
+							};							
+							
+							var list = result.list.map(createTaskList);
+							
+							var related = [];
+							["next", "previous"].forEach(function(e){
+								if(result[e]){
+									related.push({
+										"link" : createLink(h.util.uri.taskPage(result[e]), e)
+									});
+								}
+							});
+							
+							var headers = {};
+							if(result.etag){
+								headers["Etag"] = '"'+result.etag+'"';
+							}
+							
+							res.send(200, {
+								"page" : {
+									"link" : createLink(h.util.uri.taskPage(req.uriParams.taskId))
+								},
+								"list" :  list,
+								"related" : related
+							},headers);
+						}
+					});					
+					
+				}
+				else if (dbRes) {
+					res.send(404, {
+						   "error":{
+							      "reason":"Cursor task not found."
+							   }
+							},{});
+					next();
+					return;
+				}
+				else {
+					res.send(500, null,{});
+					next();
+					return;
+				}
+			});	
+		}
 	}
 };

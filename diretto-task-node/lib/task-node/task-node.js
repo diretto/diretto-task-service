@@ -67,6 +67,7 @@ module.exports = function(options) {
 			
 			util : {				
 				updateHandler : require('./util/wrapped-update-handler.js')(db),
+				viewPaginator : require('./util/view-paginator.js')(db),
 				uri : require('./util/uri-builder.js')(options),
 				identifyResource : require('./util/identify-resource.js')
 			},
@@ -207,8 +208,12 @@ module.exports = function(options) {
 	server.get('/v2/task/:taskId', [ authenticate ], api.task.get, [logging]);
 	server.get('/v2/task/:taskId/snapshot', [ authenticate ], api.task.getSnapshot, [logging]);
 	server.post('/v2/tasks', [ authenticate ], api.task.create, [logging]);
-	server.post('/v2/tasks/snapshots', [], api.task.fetchSnapshots, [logging]);
-	server.post('/v2/tasks/metadata', [], api.task.fetchMetadatas, [logging]);
+	server.post('/v2/tasks/snapshots', [authenticate], api.task.fetchSnapshots, [logging]);
+	server.post('/v2/tasks/metadata', [authenticate], api.task.fetchMetadatas, [logging]);
+	
+	server.get('/v2/tasks/all', [authenticate], api.task.getAllTasks, [logging]);
+	server.get('/v2/tasks/since/:date', [authenticate], api.task.getTasksSince, [logging]);
+	server.get('/v2/tasks/all/cursor/:taskId', [authenticate], api.task.getTaskPage, [logging]);
 
 	// Submission
 	server.post('/v2/task/:taskId/submissions', [ authenticate ], api.submission.create, [logging]);

@@ -61,7 +61,7 @@ module.exports = function(h) {
 				var submissionId = md5calc.digest('hex');
 				// TODO: extract document ID as submission ID
 
-				h.assertion.taskExists(req.uriParams.taskId, h.db, function(taskExists, task) {
+				h.assertion.taskExists(req.uriParams.taskId, h.db, function(taskExists) {
 					if (!taskExists) {
 						res.send(404, {
 							"error" : {

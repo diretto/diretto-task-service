@@ -26,12 +26,33 @@ module.exports = function(options){
 		}
 		else if(p.queryId){
 			return  baseUri+"/query/stored/"+p.queryId;
-		}		else{
+		}			
+		else if(p.taskCursor){
+			return  baseUri+"/tasks/all/cursor/"+p.taskCursor;
+		}		
+		else{
 			return baseUri;
 		}
 	};
 	
 	return {
+		taskPage : function(cursor){
+			return builder({
+				taskCursor: cursor
+			});
+		},
+		queryDispatch : function(){
+			return baseUri+"/query";
+		},
+		tags : function(){
+			return baseUri+"/tags";
+		},
+		tasks : function(){
+			return baseUri+"/tasks";
+		},		
+		allTasks : function(){
+			return baseUri+"/tasks/all";
+		},
 		task : function(task){
 			return builder({
 					taskId: task
