@@ -310,15 +310,18 @@ module.exports = function(h) {
 	
 			var fetchTask = function(uri, id) {
 				fetchFunction(id, function(err, result) {
+					
+					var uri = h.util.uri.task(id);
+					
 					if (err) {
-						results[id] = {
+						results[uri] = {
 								"error" : {
 									message : err.error || "Error"
 								}
 						};
 					}
 					else {
-						results[id] = result;
+						results[uri] = result;
 					}
 					console.log(id);
 					b.submit();
