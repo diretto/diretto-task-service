@@ -13,9 +13,9 @@ module.exports = function(h) {
 	var DESCRIPTION_MIN_LENGTH = 0;
 	var DESCRIPTION_MAX_LENGTH = 4000;
 	
-	var SNAPSHOT_LIMIT_PER_QUERY = 100;
+	var SNAPSHOT_LIMIT_PER_QUERY = h.options.task.parameters.paginationSize || 50;
 	
-	var PAGINATION_SIZE = 20;
+	var PAGINATION_SIZE = h.options.task.parameters.paginationSize || 20;
 
 	var validateTask = function(data, response, next, callback) {
 		var failed = false;

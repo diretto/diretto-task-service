@@ -25,6 +25,10 @@
 		"core": {
 			"uri" : "http://api.diretto.org/v2"
 		}
+	},
+	"parameters" : {
+		"paginationSize" : 20,
+		"batchLimit" : 50
 	}
     	 
 }

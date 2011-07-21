@@ -63,7 +63,11 @@ module.exports = function(h) {
 				"rel" : "self",
 				"href" : h.util.uri.queryDispatch()
 			}
-		} ]
+		} ],
+		"parameters" : {
+			"paginationSize" : h.options.task.parameters.paginationSize || 20,
+			"batchLimit" : h.options.task.parameters.batchLimit || 50
+		}
 	};
 
 	return {

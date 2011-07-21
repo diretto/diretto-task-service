@@ -10,7 +10,7 @@ var crypto = require('crypto');
  */
 module.exports = function(h) {
 	
-	var PAGINATION_SIZE = 10;
+	var PAGINATION_SIZE = h.options.task.parameters.paginationSize || 20;
 	
 	var MAX_TAG_COUNT = 12;
 
