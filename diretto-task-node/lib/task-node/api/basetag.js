@@ -60,7 +60,7 @@ module.exports = function(h) {
 		}
 	};
 
-	var createTag = function(_tag, creator,  callback) {
+	var createTag = function(_tag, creator, callback) {
 		var md5calc = crypto.createHash('md5');
 		md5calc.update(_tag);
 		var tagId = md5calc.digest('hex');
@@ -111,42 +111,54 @@ module.exports = function(h) {
 	var handleMultiple = function(data, req, res, next) {
 
 		var results = {};
-		
+
 		console.log(data.values.length);
 		if (data && data.values && typeof (data.values) == 'object' && typeof (data.values.length) === 'number') {
 
-			var successCallback = function() {
-				res.send(200, {
-					results : results
-				});
-			};
+			if (data.values.length > 0) {
 
-			var b = barrierpoints(data.values.length, successCallback);
+				var successCallback = function() {
+					res.send(200, {
+						results : results
+					});
+					next();
+					return;
+				};
 
-			data.values.forEach(function(value) {
-				var err = validateBaseTagGeneric(value);
-				if (err !== null) {
-					results[value] = err;
-					console.log("oops1");
-					b.submit();
-				}
-				else {
-					createTag(value, req.authenticatedUser , function(error, basetag) {
-						if (error) {
-							results[value] = {
-								error : {
-									"message" : "internal error"
+				var b = barrierpoints(data.values.length, successCallback);
+
+				data.values.forEach(function(value) {
+					var err = validateBaseTagGeneric(value);
+					if (err !== null) {
+						results[value] = err;
+						console.log("oops1");
+						b.submit();
+					}
+					else {
+						createTag(value, req.authenticatedUser, function(error, basetag) {
+							if (error) {
+								results[value] = {
+									error : {
+										"message" : "internal error"
+									}
 								}
 							}
-						}
-						else {
-							results[value] = basetag;
-						}
-						console.log("oops2");
-						b.submit();
-					});
-				}
-			});
+							else {
+								results[value] = basetag;
+							}
+							console.log("oops2");
+							b.submit();
+						});
+					}
+				});
+			}
+			else{
+				res.send(400, {
+					error : {
+						reason : "List is empty"
+					}
+				});				
+			}
 		}
 		else {
 			res.send(400, {
