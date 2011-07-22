@@ -112,7 +112,6 @@ module.exports = function(h) {
 
 		var results = {};
 
-		console.log(data.values.length);
 		if (data && data.values && typeof (data.values) == 'object' && typeof (data.values.length) === 'number') {
 
 			if (data.values.length > 0) {
@@ -131,7 +130,6 @@ module.exports = function(h) {
 					var err = validateBaseTagGeneric(value);
 					if (err !== null) {
 						results[value] = err;
-						console.log("oops1");
 						b.submit();
 					}
 					else {
@@ -146,7 +144,6 @@ module.exports = function(h) {
 							else {
 								results[value] = basetag;
 							}
-							console.log("oops2");
 							b.submit();
 						});
 					}
