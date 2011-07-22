@@ -228,6 +228,7 @@ module.exports = function(options) {
 	// Tag
 	server.post('/v2/tags', [ authenticate ], api.basetag.create, [logging]);
 	server.get('/v2/tag/:tagId', [ authenticate ], api.basetag.get, [logging]);
+	server.post('/v2/tags/multiple', [ authenticate ], api.basetag.multiple, [logging]);
 
 	server.post('/v2/task/:taskId/submission/:submissionId/tags', [ authenticate ], api.tag.append, [logging]);
 	server.get('/v2/task/:taskId/submission/:submissionId/tags', [ authenticate ], api.tag.getAll, [logging]);

@@ -1,5 +1,7 @@
 var crypto = require('crypto');
 
+var barrierpoints = require('barrierpoints');
+
 /**
  * Tag handler
  * 
@@ -39,6 +41,118 @@ module.exports = function(h) {
 		if (!failed) {
 			callback({
 				"value" : data.value
+			});
+		}
+	};
+
+	// returns null if ok, otherwise error
+	var validateBaseTagGeneric = function(tag) {
+
+		if (!tag || !(typeof (tag) == 'string' && tag.length >= TAG_MIN_LENGTH && tag.length <= TAG_MAX_LENGTH)) {
+			return {
+				error : {
+					reason : "Invalid tag entity. Please check your entity structure."
+				}
+			};
+		}
+		else {
+			return null;
+		}
+	};
+
+	var createTag = function(_tag, creator,  callback) {
+		var md5calc = crypto.createHash('md5');
+		md5calc.update(_tag);
+		var tagId = md5calc.digest('hex');
+
+		var tagDocId = h.CONSTANTS.BASETAG.PREFIX + "-" + tagId;
+
+		var resourceUri = h.util.uri.tag(tagId);
+		var successResponse = {
+			"baseTag" : {
+				"link" : {
+					"rel" : "self",
+					"href" : resourceUri
+				}
+			}
+		};
+
+		h.assertion.baseTagExists(tagDocId, h.db, function(exists) {
+			if (exists) {
+				callback(null, successResponse);
+			}
+			else {
+				var tagDoc = {};
+
+				tagDoc._id = tagDocId;
+				tagDoc.creationTime = new Date().toRFC3339UTCString();
+				tagDoc.creator = creator;
+				tagDoc.type = h.CONSTANTS.BASETAG.TYPE;
+				tagDoc.value = _tag;
+
+				h.db.save(tagDocId, tagDoc, function(err, dbRes) {
+					if (err) {
+						if (err.error && err.error === 'conflict') {
+							callback(null, successResponse);
+						}
+						else {
+							console.dir(err);
+							callback("oops");
+						}
+					}
+					else {
+						callback(null, successResponse);
+					}
+				});
+			}
+		});
+	};
+
+	var handleMultiple = function(data, req, res, next) {
+
+		var results = {};
+		
+		console.log(data.values.length);
+		if (data && data.values && typeof (data.values) == 'object' && typeof (data.values.length) === 'number') {
+
+			var successCallback = function() {
+				res.send(200, {
+					results : results
+				});
+			};
+
+			var b = barrierpoints(data.values.length, successCallback);
+
+			data.values.forEach(function(value) {
+				var err = validateBaseTagGeneric(value);
+				if (err !== null) {
+					results[value] = err;
+					console.log("oops1");
+					b.submit();
+				}
+				else {
+					createTag(value, req.authenticatedUser , function(error, basetag) {
+						if (error) {
+							results[value] = {
+								error : {
+									"message" : "internal error"
+								}
+							}
+						}
+						else {
+							results[value] = basetag;
+						}
+						console.log("oops2");
+						b.submit();
+					});
+				}
+			});
+		}
+		else {
+			res.send(400, {
+				error : {
+					reason : "Invalid tag request entity. "
+				}
 			});
 		}
 	};
@@ -115,9 +229,9 @@ module.exports = function(h) {
 			h.db.view('tasks/basetags', {
 				key : req.uriParams.tagId
 			}, function(err, dbRes) {
-				if(dbRes && dbRes.length === 1){
+				if (dbRes && dbRes.length === 1) {
 					res.send(200, dbRes[0].value.content, {
-						"Etag" : "\""+dbRes[0].value.etag+"\""
+						"Etag" : "\"" + dbRes[0].value.etag + "\""
 					});
 					next();
 				}
@@ -130,6 +244,10 @@ module.exports = function(h) {
 					next();
 				}
 			});
+		},
+
+		multiple : function(req, res, next) {
+			handleMultiple(req.params, req, res, next);
 		}
 
 	};
