@@ -211,9 +211,9 @@ module.exports = function(options) {
 	server.post('/v2/tasks/snapshots', [authenticate], api.task.fetchSnapshots, [logging]);
 	server.post('/v2/tasks/metadata', [authenticate], api.task.fetchMetadatas, [logging]);
 	
-	server.get('/v2/tasks/all', [authenticate], api.task.getAllTasks, [logging]);
+	server.get('/v2/tasks', [authenticate], api.task.getAllTasks, [logging]);
 	server.get('/v2/tasks/since/:date', [authenticate], api.task.getTasksSince, [logging]);
-	server.get('/v2/tasks/all/cursor/:taskId', [authenticate], api.task.getTaskPage, [logging]);
+	server.get('/v2/tasks/cursor/:taskId', [authenticate], api.task.getTaskPage, [logging]);
 
 	// Submission
 	server.post('/v2/task/:taskId/submissions', [ authenticate ], api.submission.create, [logging]);

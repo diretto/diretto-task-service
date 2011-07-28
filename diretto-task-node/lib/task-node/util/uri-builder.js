@@ -28,7 +28,7 @@ module.exports = function(options){
 			return  baseUri+"/query/stored/"+p.queryId;
 		}			
 		else if(p.taskCursor){
-			return  baseUri+"/tasks/all/cursor/"+p.taskCursor;
+			return  baseUri+"/tasks/cursor/"+p.taskCursor;
 		}		
 		else{
 			return baseUri;
@@ -51,7 +51,7 @@ module.exports = function(options){
 			return baseUri+"/tasks";
 		},		
 		allTasks : function(){
-			return baseUri+"/tasks/all";
+			return baseUri+"/tasks";
 		},
 		task : function(task){
 			return builder({
