@@ -294,7 +294,7 @@ module.exports = function(h) {
 				else{
 					results[id] = {
 							"error" : {
-								message : "not found"
+								"reason" : "not found"
 							}
 					};
 				}					
@@ -316,7 +316,7 @@ module.exports = function(h) {
 					if (err) {
 						results[uri] = {
 								"error" : {
-									message : err.error || "Error"
+									"reason" : err.error || "Error"
 								}
 						};
 					}

@@ -137,7 +137,7 @@ module.exports = function(h) {
 							if (error) {
 								results[value] = {
 									error : {
-										"message" : "internal error"
+										"reason" : "internal error"
 									}
 								}
 							}
