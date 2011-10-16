@@ -22,9 +22,9 @@ The node application itself must be configured using the `diretto-task-node/conf
 
 tbd.
 
-## License
+## License (not valid for `diretto-task-node/vendor/`)
 
-	Copyright (c) 2011 Benjamin Erb
+	Copyright (c) 2011 Benjamin Erb, Tobias Schlecht
 
 	Permission is hereby granted, free of charge, to any person obtaining
 	a copy of this software and associated documentation files (the
