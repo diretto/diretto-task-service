@@ -6,11 +6,10 @@
 	"auth" : {
 		"plugin" : "auth-basic-dummy"
 	},
-	"enableNewAccounts" : true,
     "deployment": {
-    	"title":"diretto v2 Task Dev Instance",
-    	"website":"http://www.diretto.org",
-    	"contact":"mail@diretto.org"
+    	"title":"<Deployment Title>",
+    	"website":"<Contact Website URI>",
+    	"contact":"<Contact Mail>"
     },
 	"persistence" : {
 		"couchdb":{
@@ -20,7 +19,7 @@
 		}
 	},
 	"external": {
-		"uri" : "http://192.168.2.3:8006/v2"
+		"uri" : "http://mypublicservicehost:8006/v2"
 	},
 	"direttoMainServices" : {
 		"core": {
@@ -30,6 +29,5 @@
 	"parameters" : {
 		"paginationSize" : 20,
 		"batchLimit" : 50
-	}
-    	 
+	}    	 
 }
