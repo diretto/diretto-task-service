@@ -13,7 +13,7 @@ module.exports = function(h) {
 	var DESCRIPTION_MIN_LENGTH = 0;
 	var DESCRIPTION_MAX_LENGTH = 4000;
 	
-	var SNAPSHOT_LIMIT_PER_QUERY = h.options.task.parameters.paginationSize || 50;
+	var SNAPSHOT_LIMIT_PER_QUERY = h.options.task.parameters.batchLimit || 50;
 	
 	var PAGINATION_SIZE = h.options.task.parameters.paginationSize || 20;
 

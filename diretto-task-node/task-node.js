@@ -19,3 +19,8 @@ config['task'] = direttoUtil.readConfigFileSync(path.join(__dirname, 'conf', 'ta
 
 var taskNode = TaskNode(config);
 taskNode.bind();
+
+//BAD THING, I know :-(
+process.on('uncaughtException', function (err) {
+	  console.log('ERROR: ' + err);
+});

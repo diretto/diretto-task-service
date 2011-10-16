@@ -6,6 +6,7 @@
 	"auth" : {
 		"plugin" : "auth-basic-dummy"
 	},
+	"enableNewAccounts" : true,
     "deployment": {
     	"title":"diretto v2 Task Dev Instance",
     	"website":"http://www.diretto.org",
@@ -19,7 +20,7 @@
 		}
 	},
 	"external": {
-		"uri" : "http://localhost:8006/v2"
+		"uri" : "http://192.168.2.3:8006/v2"
 	},
 	"direttoMainServices" : {
 		"core": {
