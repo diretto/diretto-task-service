@@ -8,6 +8,18 @@ Please refer to the API documentation: http://diretto.github.com/diretto-api-doc
 
 ## Installation Guide
 
+The setup of the task service implementation is similar to the setup of the main platform services. It requires: 
+
+ - latest node.js 0.4.x
+ - no NPM (self-contained dependencies)
+ - CouchDB with CouchDB-Lucene extension
+
+Before running the task node, it is necessary to push the CouchApp to the database. Please don't forget to set config params before deploying. 
+The config file in `diretto-task-couchapp/vendor/diretto/config.js` requires valid endpoints URIs, otherwise service responses will contain invalid URIs later.
+
+The node application itself must be configured using the `diretto-task-node/conf/task.json` file. It is especially important to set the `direttoMainServices.core.uri` to the valid base URI of the core API service of the instance this task service should work with.
+
+
 tbd.
 
 ## License
